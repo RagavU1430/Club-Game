@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WordWave — Semantic Word Game</title>
+  <meta name="description" content="WordWave: An AI-powered semantic word game. Type clues, clear rising words, build streaks. Powered by real word embeddings.">
+  <meta name="theme-color" content="#08080F">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate icon" href="favicon.ico">
+  <link rel="stylesheet" href="css/global.css">
+  <style>
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    /* ─── Landing ───────────────────────────────────── */
+    .landing {
+      position: relative; z-index: 10;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 24px 60px;
+      gap: 32px;
+    }
+
+    /* Hero */
+    .hero { text-align: center; }
+    .hero-logo {
+      font-size: clamp(3.5rem, 10vw, 6rem);
+      font-weight: 900; letter-spacing: -.05em; line-height: 1;
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 55%, var(--pink) 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 14px;
+      filter: drop-shadow(0 0 40px rgba(0,212,255,.25));
+    }
+    .hero-tagline {
+      font-size: clamp(.9rem, 2.5vw, 1.1rem);
+      color: var(--muted); font-weight: 500;
+      letter-spacing: .06em; line-height: 1.6;
+    }
+    .hero-tagline strong { color: var(--cyan); font-weight: 700; }
+
+    /* Play card */
+    .play-card {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(0,212,255,.2);
+      border-radius: 20px;
+      padding: 36px 44px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 20px;
+      max-width: 420px; width: 100%;
+      position: relative; overflow: hidden;
+      box-shadow: 0 0 60px rgba(0,212,255,.08);
+      transition: all .3s ease;
+    }
+    .play-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(0,212,255,.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .play-card:hover {
+      border-color: rgba(0,212,255,.4);
+      box-shadow: 0 0 80px rgba(0,212,255,.15);
+      transform: translateY(-2px);
+    }
+
+    .card-icon { font-size: 3rem; line-height: 1; }
+    .card-heading {
+      font-size: 1.6rem; font-weight: 900; letter-spacing: -.03em; color: var(--text);
+    }
+    .card-heading span { color: var(--cyan); }
+
+    .how-it-works {
+      display: flex; flex-direction: column; gap: 10px; width: 100%;
+    }
+    .how-row {
+      display: flex; align-items: center; gap: 12px;
+      font-size: .88rem; color: var(--muted); font-weight: 500;
+    }
+    .how-icon {
+      width: 28px; height: 28px;
+      background: rgba(0,212,255,.1); border: 1px solid rgba(0,212,255,.2);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; flex-shrink: 0;
+    }
+
+    /* Big play button */
+    .play-btn {
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+      width: 100%;
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      color: white; border: none; border-radius: 14px;
+      padding: 18px 32px;
+      font-size: 1.15rem; font-family: var(--font);
+      font-weight: 800; cursor: pointer;
+      text-decoration: none;
+      transition: all .25s ease;
+      letter-spacing: .06em; text-transform: uppercase;
+      box-shadow: 0 8px 32px rgba(0,212,255,.25);
+    }
+    .play-btn:hover {
+      filter: brightness(1.12);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0,212,255,.35);
+    }
+    .play-btn:active { transform: scale(.97); }
+    .play-btn-arrow { font-size: 1.3rem; transition: transform .2s; }
+    .play-btn:hover .play-btn-arrow { transform: translateX(4px); }
+
+    /* Tutorial Button */
+    .tutorial-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%;
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--glass-border);
+      color: var(--text); border-radius: 12px;
+      padding: 13px 20px;
+      font-size: .95rem; font-family: var(--font);
+      font-weight: 700; cursor: pointer;
+      text-decoration: none;
+      transition: all .2s ease;
+    }
+    .tutorial-btn:hover {
+      background: rgba(0, 212, 255, 0.12);
+      border-color: rgba(0, 212, 255, 0.35);
+      color: var(--cyan);
+      transform: translateY(-1px);
+    }
+
+
+    /* Decorative animated dots */
+    .dots-row {
+      display: flex; gap: 8px; align-items: center;
+    }
+    .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      animation: pulse-glow 1.5s ease-in-out infinite;
+    }
+    .dot:nth-child(1) { background: var(--cyan);   animation-delay: 0s; }
+    .dot:nth-child(2) { background: var(--purple);  animation-delay: .3s; }
+    .dot:nth-child(3) { background: var(--pink);    animation-delay: .6s; }
+
+    /* Footer */
+    .footer {
+      position: absolute; bottom: 18px;
+      font-size: .7rem; color: rgba(255,255,255,.2);
+      font-weight: 500; letter-spacing: .08em; text-align: center;
+    }
+
+    /* Loading screen on top */
+    #loading-screen { z-index: 200; }
+  </style>
+</head>
+<body>
+
+<div class="bg-anim"></div>
+
+<!-- Loading Screen -->
+<div id="loading-screen">
+  <div class="load-logo">WordWave</div>
+  <div class="load-tagline">Loading AI Engine</div>
+  <div class="load-spinner" id="load-spinner"></div>
+  <div class="load-progress-wrap">
+    <div class="load-bar-track">
+      <div class="load-bar-fill" id="load-bar"></div>
+    </div>
+    <div class="load-status" id="load-status">Downloading model…</div>
+  </div>
+  <div class="load-fact" id="load-fact">
+    Words with similar meanings live close together in mathematical space.
+  </div>
+</div>
+
+<!-- Landing (revealed after model loads) -->
+<main class="landing" id="landing" style="display:none;">
+
+  <div class="hero">
+    <div class="hero-logo">WordWave</div>
+    <div class="hero-tagline">
+      Type a word · The <strong>AI</strong> finds what you mean · Clear the board
+    </div>
+  </div>
+
+  <div class="play-card" id="play-card">
+    <div class="card-icon">⚡</div>
+    <div class="card-heading">ARCADE <span>Mode</span></div>
+
+    <div class="how-it-works">
+      <div class="how-row">
+        <div class="how-icon">📈</div>
+        Words rise toward the top — clear them before overflow
+      </div>
+      <div class="how-row">
+        <div class="how-icon">🧠</div>
+        Type any related word — the AI understands meaning
+      </div>
+      <div class="how-row">
+        <div class="how-icon">🔥</div>
+        5-hit streak triggers a board-clearing STREAK CLEAR!
+      </div>
+      <div class="how-row">
+        <div class="how-icon">⚡</div>
+        Clear 2+ words at once for combo multipliers
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px; width:100%;">
+      <a class="play-btn" href="participant.html" id="participant-btn">
+        👥 Participant Portal <span class="play-btn-arrow">→</span>
+      </a>
+      <a class="tutorial-btn" href="admin.html" id="admin-portal-btn" style="border-color:rgba(139,92,246,0.35);background:rgba(139,92,246,0.1);color:#DDD6FE;">
+        🛡️ Admin Host Portal (Password)
+      </a>
+      <a class="tutorial-btn" href="tutorial.html" id="tutorial-btn">
+        📖 Tutorial
+      </a>
+    </div>
+  </div>
+
+
+  <div class="dots-row">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+
+  <div class="footer">
+    Powered by Transformers.js · all-MiniLM-L6-v2 · Inspired by Google Semantris
+  </div>
+
+</main>
+
+<script type="module">
+  import { semanticEngine } from './js/semantic.js';
+
+  const bar     = document.getElementById('load-bar');
+  const status  = document.getElementById('load-status');
+  const factEl  = document.getElementById('load-fact');
+  const loadScr = document.getElementById('loading-screen');
+  const landing = document.getElementById('landing');
+
+  const FACTS = [
+    "Words with similar meanings live close together in mathematical space.",
+    "The AI was trained on billions of sentence pairs to understand language.",
+    "Your clue travels through 384 dimensions to find the closest word.",
+    "\"dog\" and \"puppy\" are neighbors. \"dog\" and \"skyscraper\" are worlds apart.",
+    "Cosine similarity measures the angle between two word vectors.",
+    "Even words the AI has never seen in-game can match correctly.",
+  ];
+  let fi = 0;
+  const ft = setInterval(() => {
+    fi = (fi + 1) % FACTS.length;
+    factEl.style.opacity = 0;
+    setTimeout(() => { factEl.textContent = FACTS[fi]; factEl.style.opacity = 1; }, 350);
+  }, 3500);
+
+  let loaded = false;
+  try {
+    await semanticEngine.init(({ status: s, progress: p }) => {
+      if (typeof p === 'number' && p >= 0) bar.style.width = `${Math.round(Math.min(100, p))}%`;
+      if (s === 'downloading') status.textContent = `Downloading AI model… ${Math.round(p || 0)}%`;
+      else if (s === 'initiate') status.textContent = 'Initialising model…';
+      else if (s === 'done' || s === 'ready') {
+        bar.style.width = '100%';
+        status.textContent = '✅ AI Ready!';
+      }
+    });
+    loaded = true;
+  } catch (e) {
+    status.innerHTML = `⚠️ Load failed. Check network.<div class="load-error-actions"><button class="play-btn" id="retry-btn" style="margin:14px auto 0;padding:10px 22px;font-size:0.85rem;width:auto;">🔄 Retry</button><a class="btn-secondary" id="continue-btn" href="arcade.html" style="margin:14px auto 0;padding:10px 22px;font-size:0.85rem;flex:none;">Continue anyway</a></div>`;
+    document.getElementById('retry-btn').addEventListener('click', () => location.reload());
+    console.error(e);
+  }
+
+  if (loaded) {
+    clearInterval(ft);
+    bar.style.width = '100%';
+    status.textContent = '✅ Ready!';
+    await new Promise(r => setTimeout(r, 450));
+
+    loadScr.classList.add('fade-out');
+    setTimeout(() => {
+      loadScr.style.display = 'none';
+      landing.style.display  = 'flex';
+    }, 600);
+  }
+
+</script>
+
+</body>
+</html>

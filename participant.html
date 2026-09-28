@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Participant Arena — WordWave Tournament</title>
+  <meta name="description" content="Participant portal for WordWave tournament. Choose your team from 30 logos, wait for host signal, and compete for high scores.">
+  <meta name="theme-color" content="#08080F">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/arcade.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <style>
+    /* Participant broadcast ticker */
+    .host-broadcast-ticker {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      z-index: 1300;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(0, 212, 255, 0.95));
+      color: #FFFFFF;
+      padding: 10px 24px;
+      border-radius: 100px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 8px 32px rgba(0, 212, 255, 0.45);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+    .host-broadcast-ticker.visible {
+      transform: translateX(-50%) translateY(0);
+    }
+    .host-sync-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 700;
+      margin-top: 10px;
+      justify-content: center;
+    }
+    .sync-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+      animation: pulse-glow 1.5s infinite;
+    }
+
+    /* ─── Premium Tournament Arena Loading Screen ───────── */
+    #loading-screen.loading-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      background: radial-gradient(circle at 50% 40%, rgba(20, 24, 48, 0.96) 0%, rgba(6, 7, 16, 0.99) 100%);
+      overflow: hidden;
+      transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s ease;
+    }
+
+    .load-bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      opacity: 0.35;
+      animation: float-load-orb 9s ease-in-out infinite alternate;
+    }
+    .load-bg-orb-1 {
+      width: 440px;
+      height: 440px;
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.45) 0%, rgba(0, 212, 255, 0) 70%);
+      top: 10%;
+      left: 15%;
+    }
+    .load-bg-orb-2 {
+      width: 480px;
+      height: 480px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, rgba(139, 92, 246, 0) 70%);
+      bottom: 10%;
+      right: 15%;
+      animation-delay: -4.5s;
+    }
+    @keyframes float-load-orb {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(35px, -25px) scale(1.12); }
+    }
+
+    .load-card {
+      position: relative;
+      z-index: 2;
+      width: min(480px, 92vw);
+      background: rgba(13, 17, 33, 0.82);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-top: 1px solid rgba(0, 212, 255, 0.45);
+      border-radius: 24px;
+      padding: 36px 32px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 20px;
+      box-shadow:
+        0 25px 65px -15px rgba(0, 0, 0, 0.8),
+        0 0 45px rgba(0, 212, 255, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      animation: load-card-pop 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes load-card-pop {
+      from { opacity: 0; transform: translateY(18px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .load-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      padding: 5px 14px;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: var(--cyan);
+      box-shadow: 0 0 16px rgba(0, 212, 255, 0.15);
+    }
+    .load-badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 8px var(--cyan);
+      animation: pulse-glow 1.5s infinite;
+    }
+
+    /* Cybernetic double-ring spinner */
+    .load-spinner-wrap {
+      position: relative;
+      width: 76px;
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 4px 0 2px;
+    }
+    .load-spinner-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      box-sizing: border-box;
+    }
+    .load-spinner-ring.outer {
+      width: 76px;
+      height: 76px;
+      border-top-color: var(--cyan);
+      border-right-color: rgba(0, 212, 255, 0.35);
+      border-bottom-color: transparent;
+      border-left-color: rgba(0, 212, 255, 0.15);
+      animation: load-spin 1.1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    }
+    .load-spinner-ring.inner {
+      width: 52px;
+      height: 52px;
+      border-top-color: rgba(139, 92, 246, 0.25);
+      border-right-color: transparent;
+      border-bottom-color: var(--purple);
+      border-left-color: rgba(139, 92, 246, 0.45);
+      animation: load-spin-reverse 0.85s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+      box-shadow: 0 0 16px rgba(139, 92, 246, 0.35);
+    }
+    .load-spinner-core {
+      font-size: 1.35rem;
+      animation: core-pulse 1.8s ease-in-out infinite;
+      filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.75));
+      user-select: none;
+    }
+    @keyframes load-spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes load-spin-reverse {
+      to { transform: rotate(-360deg); }
+    }
+    @keyframes core-pulse {
+      0%, 100% { transform: scale(0.92); opacity: 0.85; }
+      50% { transform: scale(1.12); opacity: 1; filter: drop-shadow(0 0 14px rgba(0, 212, 255, 0.95)); }
+    }
+
+    .load-text-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+    .load-title {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: -0.02em;
+      margin: 0;
+      line-height: 1.25;
+    }
+    .load-title span {
+      background: linear-gradient(135deg, var(--cyan) 0%, #C4B5FD 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .load-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #CBD5E1;
+      max-width: 90%;
+    }
+    .load-status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #34D399;
+      box-shadow: 0 0 8px #34D399;
+      animation: pulse-glow 1.2s infinite;
+      flex-shrink: 0;
+    }
+
+    /* Modern shimmering progress bar */
+    .load-bar-wrap {
+      width: 100%;
+      max-width: 380px;
+    }
+    .load-bar-track {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 999px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    .load-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3B82F6, #8B5CF6, #00F5FF, #10B981);
+      background-size: 250% 100%;
+      border-radius: 999px;
+      box-shadow: 0 0 12px rgba(0, 212, 255, 0.55);
+      transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      animation: shimmer-bar 2s linear infinite;
+    }
+    @keyframes shimmer-bar {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Lore / AI Insight Box */
+    .load-fact-box {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    .load-fact-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .load-fact-icon {
+      font-size: 0.75rem;
+    }
+    .load-fact {
+      font-size: 0.8rem;
+      color: #94A3B8;
+      line-height: 1.45;
+      font-weight: 500;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.3s ease;
+    }
+
+    /* ─── Match Countdown Overlay (Esports Stadium Grade) ─── */
+    .countdown-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, rgba(14, 18, 42, 0.96) 0%, rgba(4, 6, 14, 0.99) 100%);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+    .countdown-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Ambient background glows */
+    .cd-glow-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      pointer-events: none;
+      opacity: 0.35;
+      animation: cd-orb-pulse 4s ease-in-out infinite alternate;
+    }
+    .cd-glow-orb-1 {
+      width: 480px;
+      height: 480px;
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.45) 0%, rgba(0, 212, 255, 0) 70%);
+      top: 15%;
+      left: 20%;
+    }
+    .cd-glow-orb-2 {
+      width: 520px;
+      height: 520px;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, rgba(168, 85, 247, 0) 70%);
+      bottom: 15%;
+      right: 20%;
+      animation-delay: -2s;
+    }
+    @keyframes cd-orb-pulse {
+      0% { transform: scale(0.95); opacity: 0.25; }
+      100% { transform: scale(1.18); opacity: 0.45; }
+    }
+
+    .cd-grid-mesh {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      pointer-events: none;
+      opacity: 0.8;
+    }
+
+    .countdown-box {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      max-width: 480px;
+      width: 90%;
+      padding: 24px;
+    }
+
+    .countdown-top-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 18px;
+      background: rgba(0, 212, 255, 0.12);
+      border: 1px solid rgba(0, 212, 255, 0.35);
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      color: #00F5FF;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+      box-shadow: 0 0 24px rgba(0, 212, 255, 0.2);
+    }
+    .cd-live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 10px #10B981;
+      animation: pulse-dot 1.2s infinite;
+    }
+
+    /* Team showcase card */
+    .countdown-team-pill {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 26px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 100px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    .cd-badge-icon {
+      font-size: 1.75rem;
+      line-height: 1;
+      filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.6));
+    }
+    .cd-team-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+    }
+    .cd-team-prefix {
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: #94A3B8;
+      text-transform: uppercase;
+    }
+    .cd-team-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: 0.02em;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Dial & Number */
+    .countdown-dial-wrap {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 22px;
+    }
+    .cd-dial-svg {
+      position: absolute;
+      inset: 0;
+      filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.45));
+    }
+    .cd-dial-progress {
+      transition: stroke-dashoffset 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .countdown-number {
+      position: relative;
+      z-index: 3;
+      font-size: clamp(5.5rem, 16vw, 7.8rem);
+      font-weight: 900;
+      line-height: 1;
+      font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+      background: linear-gradient(135deg, #FFFFFF 0%, #00F5FF 45%, #C084FC 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 35px rgba(0, 212, 255, 0.85));
+      animation: countdown-pop 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+    .countdown-number.go-active {
+      font-size: clamp(4.5rem, 14vw, 6.2rem);
+      background: linear-gradient(135deg, #FFFFFF 0%, #10B981 40%, #00F5FF 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 45px rgba(16, 185, 129, 0.95));
+      animation: countdown-go-pop 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .cd-shockwave-ring {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 212, 255, 0.7);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .cd-shockwave-ring.pulse {
+      animation: cd-shockwave-anim 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes cd-shockwave-anim {
+      0% { transform: scale(0.85); opacity: 0.95; border-color: rgba(0, 212, 255, 0.95); }
+      100% { transform: scale(1.65); opacity: 0; border-color: rgba(168, 85, 247, 0); }
+    }
+
+    @keyframes countdown-pop {
+      0% { transform: scale(1.6); opacity: 0; filter: drop-shadow(0 0 65px rgba(0, 212, 255, 1)); }
+      38% { transform: scale(0.96); opacity: 1; }
+      68% { transform: scale(1.03); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes countdown-go-pop {
+      0% { transform: scale(1.9) rotate(-4deg); opacity: 0; filter: drop-shadow(0 0 75px rgba(16, 185, 129, 1)); }
+      35% { transform: scale(0.92) rotate(2deg); opacity: 1; }
+      65% { transform: scale(1.08) rotate(-1deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+
+    .countdown-sub {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      color: #F1F5F9;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      text-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
+      transition: color 0.3s ease;
+    }
+
+    .countdown-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.82rem;
+      color: #94A3B8;
+      font-weight: 500;
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 7px 16px;
+      border-radius: 999px;
+    }
+    .cd-hint-icon {
+      font-size: 0.9rem;
+    }
+
+    /* ─── Gameplay Layout & Viewport ─────────────────────── */
+    body.arcade-body {
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    .arcade-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body class="arcade-body">
+  <div class="bg-anim"></div>
+
+  <!-- Host Broadcast Announcement Ticker -->
+  <div class="host-broadcast-ticker" id="broadcast-ticker">
+    <span>📢</span>
+    <span id="broadcast-text">Tournament match starting soon!</span>
+  </div>
+
+  <div class="arcade-wrapper" id="game-wrap">
+    <!-- ─── Participant Top HUD ──────────────────────────── -->
+    <header class="hud" id="hud">
+      <div class="hud-left">
+        <a class="hud-home-btn" href="index.html" title="WordWave Home">⌂</a>
+        <div class="hud-score-wrap">
+          <span class="hud-label">Score</span>
+          <span class="hud-score" id="score-display">0</span>
+        </div>
+        <div class="multiplier-pill" id="multiplier-pill" style="display:none;">×1</div>
+
+        <!-- Active Team Pill -->
+        <div class="hud-team-pill" id="hud-team-display" title="Click to view Team Details">
+          <span id="hud-team-badge">⚡</span>
+          <span id="hud-team-name">Volt Strikers</span>
+        </div>
+      </div>
+
+      <!-- Center Streak Dots (1-5) -->
+      <div class="streak-dots-wrap">
+        <span class="streak-label">STREAK</span>
+        <div class="streak-dots" id="streak-dots"></div>
+      </div>
+
+      <div class="hud-right">
+        <div class="hud-stat-wrap">
+          <span class="hud-label">Time</span>
+          <span class="hud-val" id="time-display">0:00</span>
+        </div>
+        <button class="hud-icon-btn" id="leaderboard-btn" title="View Tournament Leaderboard">🏆</button>
+        <button class="hud-icon-btn" id="tutorial-btn" title="How to Play Tutorial">❓</button>
+        <button class="hud-icon-btn" id="audio-toggle" title="Toggle Sound">🔊</button>
+      </div>
+    </header>
+
+    <!-- ─── Game Playing Field (Stack Area) ──────────────── -->
+    <div class="stack-area game-field" id="stack-area">
+      <!-- Particle canvas -->
+      <canvas id="particle-canvas"></canvas>
+
+      <div class="danger-line" id="danger-line">
+        <span class="danger-label">TOP CEILING DANGER</span>
+      </div>
+
+      <div class="word-stack" id="word-stack" role="region" aria-label="Word Stack"></div>
+
+      <!-- Combo badge & Streak Clear banner -->
+      <div class="combo-badge" id="combo-badge"></div>
+      <div class="streak-banner" id="streak-banner">
+        <h2>STREAK CLEAR!</h2>
+        <p>All words cleared</p>
+      </div>
+
+      <div class="score-floaters-container" id="floaters-container"></div>
+      <div class="shockwave-ring" id="shockwave-ring"></div>
+
+      <!-- Robot Companion / Word Thrower -->
+      <div class="robot-companion" id="robot-companion" aria-hidden="true">
+        <div class="robot-speech" id="robot-speech"></div>
+        <div class="robot-body-wrapper" id="robot-body-wrapper">
+          <svg class="robot-svg" viewBox="0 0 100 120" width="76" height="92" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="botPlate" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1E2338"/>
+                <stop offset="100%" stop-color="#0E101E"/>
+              </linearGradient>
+              <linearGradient id="botCore" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00D4FF"/>
+                <stop offset="100%" stop-color="#8B5CF6"/>
+              </linearGradient>
+              <linearGradient id="botFlame" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#00D4FF"/>
+                <stop offset="55%" stop-color="#8B5CF6"/>
+                <stop offset="100%" stop-color="transparent"/>
+              </linearGradient>
+              <filter id="botNeonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2.5" result="blur"/>
+                <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+              </filter>
+            </defs>
+            <g class="robot-thruster">
+              <ellipse cx="50" cy="98" rx="14" ry="4" fill="rgba(0, 212, 255, 0.35)" filter="url(#botNeonGlow)"/>
+              <path class="thruster-flame" d="M 40 98 Q 50 118 60 98 Z" fill="url(#botFlame)" filter="url(#botNeonGlow)"/>
+              <path class="thruster-flame-inner" d="M 44 98 Q 50 110 56 98 Z" fill="#00D4FF"/>
+            </g>
+            <g class="robot-left-arm">
+              <rect x="22" y="58" width="8" height="22" rx="4" fill="url(#botPlate)" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+              <circle cx="26" cy="80" r="4" fill="#00D4FF" opacity="0.8"/>
+            </g>
+            <g class="robot-torso">
+              <rect x="30" y="52" width="40" height="38" rx="8" fill="url(#botPlate)" stroke="rgba(0, 212, 255, 0.4)" stroke-width="1.5"/>
+              <rect x="36" y="58" width="28" height="4" rx="2" fill="rgba(255,255,255,0.1)"/>
+              <circle class="robot-core" cx="50" cy="72" r="8" fill="url(#botCore)" filter="url(#botNeonGlow)"/>
+              <circle cx="50" cy="72" r="3.5" fill="#FFFFFF"/>
+            </g>
+            <g class="robot-antenna">
+              <line x1="50" y1="22" x2="50" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="2.5" stroke-linecap="round"/>
+              <circle class="antenna-bulb" cx="50" cy="10" r="4" fill="#00D4FF" filter="url(#botNeonGlow)"/>
+            </g>
+            <g class="robot-head">
+              <rect x="30" y="20" width="40" height="30" rx="8" fill="url(#botPlate)" stroke="rgba(0, 212, 255, 0.5)" stroke-width="1.5"/>
+              <rect x="26" y="29" width="4" height="12" rx="2" fill="#8B5CF6"/>
+              <rect x="70" y="29" width="4" height="12" rx="2" fill="#8B5CF6"/>
+              <rect class="visor-screen" x="35" y="26" width="30" height="18" rx="5" fill="#070810" stroke="rgba(0,212,255,0.3)" stroke-width="1"/>
+              <g class="robot-eyes" id="robot-eyes">
+                <ellipse class="eye eye-left" cx="43" cy="35" rx="3.5" ry="4" fill="#00D4FF" filter="url(#botNeonGlow)"/>
+                <ellipse class="eye eye-right" cx="57" cy="35" rx="3.5" ry="4" fill="#00D4FF" filter="url(#botNeonGlow)"/>
+              </g>
+            </g>
+            <g class="robot-right-arm" id="robot-throwing-arm">
+              <rect x="70" y="58" width="8" height="22" rx="4" fill="url(#botPlate)" stroke="rgba(0,212,255,0.4)" stroke-width="1.5"/>
+              <circle cx="74" cy="80" r="4" fill="#8B5CF6" opacity="0.9"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Clue Input Bar (Input Area) ───────────────────── -->
+    <div class="input-area input-bar" id="input-bar">
+      <div class="sim-indicator" id="sim-indicator" style="opacity:0;">
+        <span class="sim-label">Similarity</span>
+        <div class="sim-track">
+          <div class="sim-fill" id="sim-fill" style="width:0%"></div>
+        </div>
+        <span class="sim-pct" id="sim-pct"></span>
+      </div>
+
+      <div class="input-row input-wrap">
+        <input
+          type="text"
+          id="clue-input"
+          class="word-input clue-input"
+          placeholder="Type a related word clue and press Enter…"
+          aria-label="Semantic clue input"
+          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+          maxlength="40"
+          enterkeyhint="go"
+        >
+        <button class="submit-btn" id="submit-btn" title="Submit Clue">➔</button>
+      </div>
+      <div class="feedback-text input-feedback" id="input-feedback" aria-live="polite" role="status"></div>
+      <div class="target-hint">🎯 TOP word is the <strong>TARGET</strong> (+40 bonus) — clear it first!</div>
+    </div>
+  </div>
+
+  <!-- ─── Loading Screen ───────────────────────────────── -->
+  <div class="loading-overlay" id="loading-screen">
+    <!-- Ambient glowing backdrop orbs -->
+    <div class="load-bg-orb load-bg-orb-1"></div>
+    <div class="load-bg-orb load-bg-orb-2"></div>
+
+    <div class="load-card">
+      <div class="load-badge">
+        <span class="load-badge-dot"></span>
+        <span>TOURNAMENT ARENA</span>
+      </div>
+
+      <div class="load-spinner-wrap">
+        <div class="load-spinner-ring outer"></div>
+        <div class="load-spinner-ring inner"></div>
+        <div class="load-spinner-core">⚡</div>
+      </div>
+
+      <div class="load-text-group">
+        <h2 class="load-title">Connecting to <span>Tournament Arena</span></h2>
+        <div class="load-status-pill">
+          <span class="load-status-dot"></span>
+          <span id="load-status">Loading neural semantic model…</span>
+        </div>
+      </div>
+
+      <div class="load-bar-wrap">
+        <div class="load-bar-track">
+          <div class="load-bar" id="load-bar"></div>
+        </div>
+      </div>
+
+      <div class="load-fact-box">
+        <div class="load-fact-header">
+          <span class="load-fact-icon">💡</span>
+          <span class="load-fact-label">SEMANTIC AI INSIGHT</span>
+        </div>
+        <div class="load-fact" id="load-fact">
+          WordWave connects your team's clues in 384-dimensional mathematical space!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Match Countdown Overlay (3.. 2.. 1.. GO!) ───── -->
+  <div class="countdown-overlay" id="countdown-overlay" aria-live="assertive" role="alert">
+    <!-- Ambient glowing orbs in countdown -->
+    <div class="cd-glow-orb cd-glow-orb-1"></div>
+    <div class="cd-glow-orb cd-glow-orb-2"></div>
+    <div class="cd-grid-mesh"></div>
+
+    <div class="countdown-box">
+      <!-- Esports Tournament Header Badge -->
+      <div class="countdown-top-badge">
+        <span class="cd-live-dot"></span>
+        <span>TOURNAMENT MATCH STARTING</span>
+      </div>
+
+      <!-- Selected Team Pill -->
+      <div class="countdown-team-pill" id="countdown-team-pill">
+        <div class="cd-badge-icon" id="countdown-team-badge">⚡</div>
+        <div class="cd-team-info">
+          <span class="cd-team-prefix">PLAYING AS</span>
+          <span class="cd-team-title" id="countdown-team-name">Volt Strikers</span>
+        </div>
+      </div>
+
+      <!-- Giant Dial / Ring & Number -->
+      <div class="countdown-dial-wrap">
+        <svg class="cd-dial-svg" viewBox="0 0 220 220" width="220" height="220">
+          <circle class="cd-dial-track" cx="110" cy="110" r="96" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="6" />
+          <circle class="cd-dial-progress" id="countdown-dial-progress" cx="110" cy="110" r="96" fill="none" stroke="url(#cdGradient)" stroke-width="6" stroke-linecap="round" stroke-dasharray="603" stroke-dashoffset="0" transform="rotate(-90 110 110)" />
+          <defs>
+            <linearGradient id="cdGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00F5FF" />
+              <stop offset="50%" stop-color="#8B5CF6" />
+              <stop offset="100%" stop-color="#EC4899" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        <div class="cd-shockwave-ring" id="cd-shockwave-ring"></div>
+        <div class="countdown-number" id="countdown-number">3</div>
+      </div>
+
+      <!-- Dynamic Status & Hint -->
+      <div class="countdown-sub" id="countdown-sub">GET READY TO PLAY!</div>
+      <div class="countdown-hint">
+        <span class="cd-hint-icon">🎯</span>
+        <span>Target topmost words first for maximum combo bonuses!</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Participant Team Locker Room Modal ──────────── -->
+  <div class="modal-overlay" id="lobby-modal" role="dialog" aria-modal="true" aria-label="Team Locker Room">
+    <div class="lobby-card">
+      <div class="lobby-badge-row">
+        <span class="lobby-tag">👥 PARTICIPANT PORTAL</span>
+        <span class="lobby-mode-pill" id="lobby-status-pill">Ready to Play</span>
+      </div>
+
+      <h2 class="lobby-title">WordWave <span>Team Setup</span></h2>
+      <p class="lobby-desc">Pick your team name and select your team logo from the <strong>30 official team logos</strong> below.</p>
+
+      <div class="team-input-group">
+        <label for="team-name-input" class="team-label">YOUR TEAM NAME</label>
+        <div class="team-input-wrap">
+          <input type="text" id="team-name-input" class="team-input" placeholder="e.g. Cyber Wolves" maxlength="22" autocomplete="off" spellcheck="false">
+          <button type="button" class="btn-random-name" id="random-name-btn" title="Pick Random Team & Logo">🎲 Random</button>
+        </div>
+      </div>
+
+      <div class="avatar-select-group">
+        <label class="team-label">CHOOSE 1 OF 30 TEAM LOGOS</label>
+        <div class="avatar-grid" id="avatar-grid">
+          <button type="button" class="avatar-btn active" data-badge="⚡" title="Team 1: Volt Lightning">⚡</button>
+          <button type="button" class="avatar-btn" data-badge="🐺" title="Team 2: Cyber Wolf">🐺</button>
+          <button type="button" class="avatar-btn" data-badge="🚀" title="Team 3: Cosmic Rocket">🚀</button>
+          <button type="button" class="avatar-btn" data-badge="👾" title="Team 4: Pixel Alien">👾</button>
+          <button type="button" class="avatar-btn" data-badge="🔥" title="Team 5: Inferno Flame">🔥</button>
+          <button type="button" class="avatar-btn" data-badge="💎" title="Team 6: Crystal Diamond">💎</button>
+          <button type="button" class="avatar-btn" data-badge="👑" title="Team 7: Royal Crown">👑</button>
+          <button type="button" class="avatar-btn" data-badge="🎯" title="Team 8: Target Sniper">🎯</button>
+          <button type="button" class="avatar-btn" data-badge="🦁" title="Team 9: Golden Lion">🦁</button>
+          <button type="button" class="avatar-btn" data-badge="🤖" title="Team 10: Cyborg Bot">🤖</button>
+          <button type="button" class="avatar-btn" data-badge="🐉" title="Team 11: Mystic Dragon">🐉</button>
+          <button type="button" class="avatar-btn" data-badge="🦅" title="Team 12: Soaring Eagle">🦅</button>
+          <button type="button" class="avatar-btn" data-badge="🦈" title="Team 13: Neon Shark">🦈</button>
+          <button type="button" class="avatar-btn" data-badge="🦊" title="Team 14: Swift Fox">🦊</button>
+          <button type="button" class="avatar-btn" data-badge="🐻" title="Team 15: Iron Bear">🐻</button>
+          <button type="button" class="avatar-btn" data-badge="🐯" title="Team 16: Shadow Tiger">🐯</button>
+          <button type="button" class="avatar-btn" data-badge="🐍" title="Team 17: Cyber Viper">🐍</button>
+          <button type="button" class="avatar-btn" data-badge="⚔️" title="Team 18: Dual Swords">⚔️</button>
+          <button type="button" class="avatar-btn" data-badge="🛡️" title="Team 19: Aegis Shield">🛡️</button>
+          <button type="button" class="avatar-btn" data-badge="🌪️" title="Team 20: Vortex Cyclone">🌪️</button>
+          <button type="button" class="avatar-btn" data-badge="☄️" title="Team 21: Blazing Comet">☄️</button>
+          <button type="button" class="avatar-btn" data-badge="🔮" title="Team 22: Mystic Orb">🔮</button>
+          <button type="button" class="avatar-btn" data-badge="🏆" title="Team 23: Golden Trophy">🏆</button>
+          <button type="button" class="avatar-btn" data-badge="🌌" title="Team 24: Cosmic Galaxy">🌌</button>
+          <button type="button" class="avatar-btn" data-badge="⭐" title="Team 25: Nova Star">⭐</button>
+          <button type="button" class="avatar-btn" data-badge="🏎️" title="Team 26: Turbo Velocity">🏎️</button>
+          <button type="button" class="avatar-btn" data-badge="🥊" title="Team 27: Power Striker">🥊</button>
+          <button type="button" class="avatar-btn" data-badge="🧬" title="Team 28: Quantum Helix">🧬</button>
+          <button type="button" class="avatar-btn" data-badge="⚓" title="Team 29: Anchor Vanguard">⚓</button>
+          <button type="button" class="avatar-btn" data-badge="🛸" title="Team 30: Star Voyager">🛸</button>
+        </div>
+      </div>
+
+      <div class="lobby-actions">
+        <button class="btn-primary lobby-start-btn" id="lobby-start-btn">🚀 START PLAYING</button>
+        <div class="lobby-sub-actions">
+          <button type="button" class="btn-secondary" id="lobby-view-lb-btn">🏆 View Leaderboard</button>
+          <button type="button" class="btn-secondary" id="lobby-view-tut-btn">❓ How to Play</button>
+        </div>
+      </div>
+
+      <div class="host-sync-status">
+        <span class="sync-indicator"></span>
+        <span id="sync-msg">Connected to Host. Match start signal will trigger countdown automatically.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Game Over Overlay ────────────────────────────── -->
+  <div class="game-over-overlay" id="game-over-overlay">
+    <div class="game-over-card">
+      <div class="go-title">MATCH COMPLETED</div>
+      <div class="go-subtitle">Tournament Result Submitted</div>
+      <div class="go-team-pill" id="go-team-pill">
+        <span id="go-team-icon">⚡</span>
+        <span id="go-team-name">Volt Strikers</span>
+        <span class="go-rank-badge" id="go-rank-badge">🏆 Rank #1</span>
+      </div>
+      <div class="go-score-big" id="go-score">0</div>
+      <div class="go-best" id="go-best">Best: 0</div>
+      <span class="go-new-best" id="go-new-best" style="display:none;">✨ NEW BEST!</span>
+
+      <div class="go-stats" style="margin-top:16px; margin-bottom:20px;">
+        <div class="go-stat">
+          <div class="go-stat-val" id="go-time">0:00</div>
+          <div class="go-stat-lbl">⏱ Survival</div>
+        </div>
+        <div class="go-stat">
+          <div class="go-stat-val" id="go-streaks">0</div>
+          <div class="go-stat-lbl">🔥 Max Streak</div>
+        </div>
+      </div>
+
+
+    </div>
+  </div>
+
+  <!-- ─── Tournament Leaderboard Modal ─────────────────── -->
+  <div class="modal-overlay" id="leaderboard-modal" role="dialog" aria-modal="true" aria-label="Tournament Leaderboard">
+    <div class="leaderboard-card">
+      <div class="lb-header">
+        <div>
+          <h2 class="lb-title">Tournament <span>Rankings</span></h2>
+          <div class="lb-sub">Real-time standings for all participating teams</div>
+        </div>
+        <button class="lb-close-btn" id="lb-close-btn" title="Close">✕</button>
+      </div>
+
+      <div class="lb-table-wrap">
+        <table class="lb-table">
+          <thead>
+            <tr>
+              <th style="width:64px;">Rank</th>
+              <th>Team</th>
+              <th>Score</th>
+              <th>Time</th>
+              <th>Streak</th>
+            </tr>
+          </thead>
+          <tbody id="lb-table-body"></tbody>
+        </table>
+        <div class="lb-empty-state" id="lb-empty-state" style="display:none;">
+          No scores yet. Complete a match to claim Rank #1!
+        </div>
+      </div>
+
+      <div class="lb-footer">
+        <button type="button" class="btn-primary" id="lb-done-btn" style="width:100%;">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Interactive Tutorial Modal ───────────────────── -->
+  <div class="modal-overlay" id="tutorial-modal" role="dialog" aria-modal="true" aria-label="How to Play Tutorial">
+    <div class="tutorial-card">
+      <div class="tut-progress-bar"><div class="tut-progress-fill" id="tut-progress-fill"></div></div>
+      <div class="tut-header">
+        <div class="tut-badge">QUICK TRAINING</div>
+        <button class="tut-close-btn" id="tut-close-btn" title="Close Tutorial">✕</button>
+      </div>
+
+      <div class="tut-step-pane active" data-step="0">
+        <div class="tut-step-header">
+          <div class="tut-step-icon">🧠</div>
+          <div>
+            <div class="tut-step-title">Semantic Clues</div>
+            <div style="font-size:0.8rem;color:var(--cyan);font-weight:700;">Meaning, Not Spelling</div>
+          </div>
+        </div>
+        <p class="tut-step-body">
+          Type any word related to words in the stack. The AI calculates conceptual closeness — it understands <strong>synonyms, concepts, and meaning</strong>!
+        </p>
+        <div class="tut-visual-box">
+          <div class="tut-match-preview">
+            <div class="tut-chip clue">Clue: "whisker"</div>
+            <div style="font-size:1.2rem;color:var(--cyan);">➔</div>
+            <div class="tut-chip target">Word: "cat"</div>
+          </div>
+          <div style="font-size:0.78rem;color:var(--warn);text-align:center;font-weight:600;">
+            ⚠️ Golden Rule: Never type the word itself — give a related clue!
+          </div>
+        </div>
+      </div>
+
+      <div class="tut-step-pane" data-step="1">
+        <div class="tut-step-header">
+          <div class="tut-step-icon">📈</div>
+          <div>
+            <div class="tut-step-title">Rising Stack &amp; Target</div>
+            <div style="font-size:0.8rem;color:var(--danger);font-weight:700;">Prevent Ceiling Overflow</div>
+          </div>
+        </div>
+        <p class="tut-step-body">
+          New words crawl upward toward the red danger ceiling line. If words reach the top ceiling, it's <strong>Game Over</strong>!
+        </p>
+      </div>
+
+      <div class="tut-step-pane" data-step="2">
+        <div class="tut-step-header">
+          <div class="tut-step-icon">🔥</div>
+          <div>
+            <div class="tut-step-title">5-Hit Streak Clear</div>
+            <div style="font-size:0.8rem;color:#FFD700;font-weight:700;">Full Board Shockwave</div>
+          </div>
+        </div>
+        <p class="tut-step-body">
+          Chain <strong>5 successful hits</strong> without a miss to trigger a screen-wiping <strong>STREAK CLEAR</strong> shockwave!
+        </p>
+      </div>
+
+      <div class="tut-nav-row">
+        <div class="tut-dots" id="tut-dots">
+          <div class="tut-dot active" data-step="0"></div>
+          <div class="tut-dot" data-step="1"></div>
+          <div class="tut-dot" data-step="2"></div>
+        </div>
+        <div class="tut-btns-group">
+          <button class="tut-btn-skip" id="tut-skip-btn">Skip</button>
+          <button class="tut-btn-back" id="tut-prev-btn" disabled>← Back</button>
+          <button class="tut-btn-next" id="tut-next-btn">Next Step →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Game Engine & Synchronization ────────────────── -->
+  <script type="module">
+    import { ArcadeGame } from './js/arcade.js';
+    import { semanticEngine } from './js/semantic.js';
+    import { audio } from './js/audio.js';
+    import {
+      getActiveTeam,
+      setActiveTeam,
+      getLeaderboard,
+      getMatchState
+    } from './js/storage.js';
+
+    const bar     = document.getElementById('load-bar');
+    const status  = document.getElementById('load-status');
+    const factEl  = document.getElementById('load-fact');
+    const loadScr = document.getElementById('loading-screen');
+
+    const FACTS = [
+      "Words with similar meanings live close together in mathematical space.",
+      "The AI evaluates clues using high-dimensional cosine similarity.",
+      "Chain 5 successful words to trigger a board-wiping shockwave!",
+      "Clear the target word with the glowing cyan arrow for bonus score!"
+    ];
+    let fi = 0;
+    const ft = setInterval(() => {
+      fi = (fi + 1) % FACTS.length;
+      factEl.style.opacity = 0;
+      setTimeout(() => { factEl.textContent = FACTS[fi]; factEl.style.opacity = 1; }, 300);
+    }, 3200);
+
+    // Load AI model
+    let loaded = false;
+    try {
+      await semanticEngine.init(({ status: s, progress: p }) => {
+        if (typeof p === 'number' && p >= 0) bar.style.width = `${Math.round(Math.min(100, p))}%`;
+        if (s === 'downloading') status.textContent = `Downloading AI model… ${Math.round(p || 0)}%`;
+        else if (s === 'initiate') status.textContent = 'Initializing neural network…';
+        else if (s === 'ready' || s === 'done') {
+          bar.style.width = '100%';
+          status.textContent = '✅ Arena Ready!';
+        }
+      });
+      loaded = true;
+    } catch(e) {
+      status.innerHTML = `⚠️ Error loading AI model.<div class="load-error-actions"><button class="btn-primary" id="retry-btn" style="margin-top:14px;padding:8px 18px;font-size:0.85rem;flex:none;">🔄 Retry</button></div>`;
+      document.getElementById('retry-btn').addEventListener('click', () => location.reload());
+      console.error(e);
+    }
+
+    // ─── 30 Team Presets ──────────────────────────────────
+    const TEAM_PRESETS = [
+      { name: 'Volt Strikers',     badge: '⚡' },
+      { name: 'Cyber Wolves',      badge: '🐺' },
+      { name: 'Cosmic Rockets',    badge: '🚀' },
+      { name: 'Pixel Aliens',      badge: '👾' },
+      { name: 'Inferno Flames',    badge: '🔥' },
+      { name: 'Crystal Diamonds',  badge: '💎' },
+      { name: 'Royal Crowns',      badge: '👑' },
+      { name: 'Target Snipers',    badge: '🎯' },
+      { name: 'Golden Lions',      badge: '🦁' },
+      { name: 'Cyborg Titans',     badge: '🤖' },
+      { name: 'Mystic Dragons',    badge: '🐉' },
+      { name: 'Soaring Eagles',    badge: '🦅' },
+      { name: 'Neon Sharks',       badge: '🦈' },
+      { name: 'Swift Foxes',       badge: '🦊' },
+      { name: 'Iron Bears',        badge: '🐻' },
+      { name: 'Shadow Tigers',     badge: '🐯' },
+      { name: 'Cyber Vipers',      badge: '🐍' },
+      { name: 'Dual Swords',       badge: '⚔️' },
+      { name: 'Aegis Shields',     badge: '🛡️' },
+      { name: 'Vortex Cyclones',   badge: '🌪️' },
+      { name: 'Blazing Comets',    badge: '☄️' },
+      { name: 'Mystic Orbs',       badge: '🔮' },
+      { name: 'Golden Trophies',   badge: '🏆' },
+      { name: 'Cosmic Galaxies',   badge: '🌌' },
+      { name: 'Nova Stars',        badge: '⭐' },
+      { name: 'Turbo Velocity',    badge: '🏎️' },
+      { name: 'Power Strikers',    badge: '🥊' },
+      { name: 'Quantum Helix',     badge: '🧬' },
+      { name: 'Anchor Vanguards',  badge: '⚓' },
+      { name: 'Star Voyagers',     badge: '🛸' }
+    ];
+
+    let selectedBadge = '⚡';
+    const lobbyModal        = document.getElementById('lobby-modal');
+    const teamNameInput     = document.getElementById('team-name-input');
+    const randomNameBtn     = document.getElementById('random-name-btn');
+    const avatarGrid        = document.getElementById('avatar-grid');
+    const lobbyStartBtn     = document.getElementById('lobby-start-btn');
+    const lobbyViewLbBtn    = document.getElementById('lobby-view-lb-btn');
+    const lobbyViewTutBtn   = document.getElementById('lobby-view-tut-btn');
+
+    const hudTeamBadge      = document.getElementById('hud-team-badge');
+    const hudTeamName       = document.getElementById('hud-team-name');
+    const hudTeamDisplay    = document.getElementById('hud-team-display');
+
+    const countdownOverlay   = document.getElementById('countdown-overlay');
+    const countdownNumber    = document.getElementById('countdown-number');
+    const countdownTeamBadge = document.getElementById('countdown-team-badge');
+    const countdownTeamName  = document.getElementById('countdown-team-name');
+
+    const leaderboardModal  = document.getElementById('leaderboard-modal');
+    const lbCloseBtn        = document.getElementById('lb-close-btn');
+    const lbDoneBtn         = document.getElementById('lb-done-btn');
+    const lbTableBody       = document.getElementById('lb-table-body');
+    const lbEmptyState      = document.getElementById('lb-empty-state');
+    const leaderboardBtn    = document.getElementById('leaderboard-btn');
+    const goLeaderboardBtn  = document.getElementById('go-leaderboard-btn');
+    const goSwitchTeamBtn   = document.getElementById('go-switch-team-btn');
+
+    const broadcastTicker   = document.getElementById('broadcast-ticker');
+    const broadcastText     = document.getElementById('broadcast-text');
+
+    function refreshTeamUI() {
+      const team = getActiveTeam();
+      selectedBadge = team.badge || '⚡';
+      if (teamNameInput) teamNameInput.value = team.name || 'Volt Strikers';
+      if (hudTeamBadge) hudTeamBadge.textContent = selectedBadge;
+      if (hudTeamName) hudTeamName.textContent = team.name || 'Volt Strikers';
+      if (avatarGrid) {
+        avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.getAttribute('data-badge') === selectedBadge);
+        });
+      }
+    }
+
+    refreshTeamUI();
+
+    // 🎲 Random Preset Button
+    randomNameBtn.addEventListener('click', () => {
+      const pick = TEAM_PRESETS[Math.floor(Math.random() * TEAM_PRESETS.length)];
+      teamNameInput.value = pick.name;
+      selectedBadge = pick.badge;
+      if (avatarGrid) {
+        avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.getAttribute('data-badge') === selectedBadge);
+        });
+        const activeBtn = avatarGrid.querySelector('.avatar-btn.active');
+        if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+      teamNameInput.focus();
+    });
+
+    // Logo Button Clicks
+    avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        avatarGrid.querySelectorAll('.avatar-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedBadge = btn.getAttribute('data-badge') || '⚡';
+      });
+    });
+
+    let game = null;
+
+    function saveCurrentTeam() {
+      const name = (teamNameInput.value || '').trim() || 'Volt Strikers';
+      return setActiveTeam(name, selectedBadge);
+    }
+
+    function triggerMatchStart() {
+      const team = saveCurrentTeam();
+      refreshTeamUI();
+      lobbyModal.style.display = 'none';
+      const gameOverEl = document.getElementById('game-over-overlay');
+      if (gameOverEl) gameOverEl.classList.remove('active', 'visible');
+
+      countdownTeamBadge.textContent = team.badge;
+      countdownTeamName.textContent = team.name;
+      countdownOverlay.classList.add('active');
+
+      const cdSub = document.getElementById('countdown-sub');
+      const cdRing = document.getElementById('cd-shockwave-ring');
+      const cdDial = document.getElementById('countdown-dial-progress');
+
+      let count = 3;
+      countdownNumber.classList.remove('go-active');
+      countdownNumber.textContent = count;
+      countdownNumber.style.animation = 'none';
+      void countdownNumber.offsetWidth;
+      countdownNumber.style.animation = 'countdown-pop 0.85s cubic-bezier(0.16, 1, 0.3, 1)';
+
+      if (cdSub) cdSub.textContent = 'READY PLAYERS...';
+      if (cdDial) cdDial.style.strokeDashoffset = '0';
+      if (cdRing) {
+        cdRing.classList.remove('pulse');
+        void cdRing.offsetWidth;
+        cdRing.classList.add('pulse');
+      }
+      audio.countdown(count);
+
+      const iv = setInterval(() => {
+        count--;
+        if (count > 0) {
+          countdownNumber.classList.remove('go-active');
+          countdownNumber.textContent = count;
+          countdownNumber.style.animation = 'none';
+          void countdownNumber.offsetWidth;
+          countdownNumber.style.animation = 'countdown-pop 0.85s cubic-bezier(0.16, 1, 0.3, 1)';
+
+          if (cdSub) cdSub.textContent = count === 2 ? 'LOCK IN YOUR STRATEGY...' : 'WORDS INCOMING...';
+          if (cdDial) cdDial.style.strokeDashoffset = count === 2 ? '201' : '402';
+          if (cdRing) {
+            cdRing.classList.remove('pulse');
+            void cdRing.offsetWidth;
+            cdRing.classList.add('pulse');
+          }
+          audio.countdown(count);
+        } else if (count === 0) {
+          countdownNumber.classList.add('go-active');
+          countdownNumber.textContent = 'GO!';
+          countdownNumber.style.animation = 'none';
+          void countdownNumber.offsetWidth;
+          countdownNumber.style.animation = 'countdown-go-pop 0.9s cubic-bezier(0.16, 1, 0.3, 1)';
+          if (cdSub) cdSub.textContent = 'CLEAR THE STACK! 🔥';
+          if (cdDial) cdDial.style.strokeDashoffset = '603';
+          if (cdRing) {
+            cdRing.classList.remove('pulse');
+            void cdRing.offsetWidth;
+            cdRing.classList.add('pulse');
+          }
+          audio.countdown(0);
+        } else {
+          clearInterval(iv);
+          countdownOverlay.classList.remove('active');
+          countdownNumber.classList.remove('go-active');
+          if (game) {
+            game.destroy();
+            game = null;
+          }
+          game = new ArcadeGame();
+          game.start();
+        }
+      }, 950);
+    }
+
+    lobbyStartBtn.addEventListener('click', triggerMatchStart);
+
+    // ─── Real-time Admin Sync (Host Control Broadcast) ────
+    let lastMatchStateTimestamp = 0;
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'wordwave_match_state') {
+        const state = getMatchState();
+        if (state.timestamp && state.timestamp !== lastMatchStateTimestamp) {
+          lastMatchStateTimestamp = state.timestamp;
+
+          // Check if admin broadcast an announcement
+          if (state.message) {
+            broadcastText.textContent = state.message;
+            broadcastTicker.classList.add('visible');
+            setTimeout(() => { broadcastTicker.classList.remove('visible'); }, 5000);
+          }
+
+          // Check if admin triggered start countdown
+          if (state.status === 'COUNTDOWN') {
+            if (lobbyModal.style.display !== 'none' || !game || !game.isRunning) {
+              triggerMatchStart();
+            }
+          }
+
+          // Check if admin reset to lobby
+          if (state.status === 'LOBBY') {
+            if (game && game.isRunning) {
+              game.destroy();
+              game = null;
+            }
+            lobbyModal.style.display = 'flex';
+          }
+        }
+      }
+    });
+
+    // ─── Leaderboard Modal ────────────────────────────────
+    function openLeaderboard() {
+      const entries = getLeaderboard();
+      lbTableBody.innerHTML = '';
+      if (!entries.length) {
+        lbEmptyState.style.display = 'block';
+      } else {
+        lbEmptyState.style.display = 'none';
+        entries.forEach((e, idx) => {
+          const tr = document.createElement('tr');
+          const rank = idx + 1;
+          let medal = '';
+          if (rank === 1) medal = 'medal-gold';
+          else if (rank === 2) medal = 'medal-silver';
+          else if (rank === 3) medal = 'medal-bronze';
+
+          const mins = Math.floor((e.time || 0) / 60);
+          const secs = (e.time || 0) % 60;
+          const timeFormatted = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+          tr.innerHTML = `
+            <td class="lb-col-rank"><span class="lb-rank ${medal}">#${rank}</span></td>
+            <td class="lb-col-team">
+              <div class="lb-team-cell">
+                <span class="lb-badge">${e.badge || '⚡'}</span>
+                <span class="lb-name">${e.teamName || 'Unknown Team'}</span>
+              </div>
+            </td>
+            <td class="lb-col-score">${(e.score || 0).toLocaleString()}</td>
+            <td class="lb-col-time">${timeFormatted}</td>
+            <td class="lb-col-streak">${e.maxStreak || 0}🔥</td>
+          `;
+          lbTableBody.appendChild(tr);
+        });
+      }
+      leaderboardModal.style.display = 'flex';
+    }
+
+    leaderboardBtn.addEventListener('click', openLeaderboard);
+    lobbyViewLbBtn.addEventListener('click', openLeaderboard);
+    if (goLeaderboardBtn) goLeaderboardBtn.addEventListener('click', openLeaderboard);
+    lbCloseBtn.addEventListener('click', () => { leaderboardModal.style.display = 'none'; });
+    lbDoneBtn.addEventListener('click', () => { leaderboardModal.style.display = 'none'; });
+
+    if (goSwitchTeamBtn) {
+      goSwitchTeamBtn.addEventListener('click', () => {
+        document.getElementById('game-over-overlay').classList.remove('active', 'visible');
+        lobbyModal.style.display = 'flex';
+      });
+    }
+
+    const playAgainBtn = document.getElementById('play-again-btn');
+    if (playAgainBtn) {
+      playAgainBtn.addEventListener('click', () => {
+        document.getElementById('game-over-overlay').classList.remove('active', 'visible');
+        triggerMatchStart();
+      });
+    }
+
+    hudTeamDisplay.addEventListener('click', () => {
+      if (confirm('Return to team setup? Current game will pause.')) {
+        if (game) game.destroy();
+        lobbyModal.style.display = 'flex';
+      }
+    });
+
+    // ─── Tutorial Controls ────────────────────────────────
+    const tutorialModal  = document.getElementById('tutorial-modal');
+    const tutCloseBtn    = document.getElementById('tut-close-btn');
+    const tutSkipBtn     = document.getElementById('tut-skip-btn');
+    const tutPrevBtn     = document.getElementById('tut-prev-btn');
+    const tutNextBtn     = document.getElementById('tut-next-btn');
+    const tutDots        = document.getElementById('tut-dots');
+    const tutProgress    = document.getElementById('tut-progress-fill');
+    const tutPanes       = tutorialModal.querySelectorAll('.tut-step-pane');
+    let tutCurrentStep   = 0;
+    const TUT_TOTAL      = tutPanes.length;
+
+    function renderTutStep(step) {
+      tutCurrentStep = Math.max(0, Math.min(step, TUT_TOTAL - 1));
+      tutPanes.forEach((pane, i) => pane.classList.toggle('active', i === tutCurrentStep));
+      tutDots.querySelectorAll('.tut-dot').forEach((dot, i) => dot.classList.toggle('active', i === tutCurrentStep));
+      tutProgress.style.width = `${((tutCurrentStep + 1) / TUT_TOTAL) * 100}%`;
+      tutPrevBtn.disabled = tutCurrentStep === 0;
+      tutNextBtn.textContent = tutCurrentStep === TUT_TOTAL - 1 ? 'Start Playing! 🚀' : 'Next Step →';
+    }
+
+    function openTutorial() {
+      renderTutStep(0);
+      tutorialModal.style.display = 'flex';
+    }
+
+    tutNextBtn.addEventListener('click', () => {
+      if (tutCurrentStep < TUT_TOTAL - 1) renderTutStep(tutCurrentStep + 1);
+      else tutorialModal.style.display = 'none';
+    });
+    tutPrevBtn.addEventListener('click', () => {
+      if (tutCurrentStep > 0) renderTutStep(tutCurrentStep - 1);
+    });
+    tutSkipBtn.addEventListener('click', () => { tutorialModal.style.display = 'none'; });
+    tutCloseBtn.addEventListener('click', () => { tutorialModal.style.display = 'none'; });
+    document.getElementById('tutorial-btn').addEventListener('click', openTutorial);
+    lobbyViewTutBtn.addEventListener('click', openTutorial);
+
+    const audioToggleBtn = document.getElementById('audio-toggle');
+    if (audioToggleBtn) {
+      audioToggleBtn.textContent = audio.enabled ? '🔊' : '🔇';
+      audioToggleBtn.addEventListener('click', () => {
+        const state = audio.toggle();
+        audioToggleBtn.textContent = state ? '🔊' : '🔇';
+      });
+    }
+
+    // Initial finish loading
+    if (loaded) {
+      clearInterval(ft);
+      loadScr.style.opacity = '0';
+      loadScr.style.transition = 'opacity 0.4s';
+      setTimeout(() => {
+        loadScr.style.display = 'none';
+        lobbyModal.style.display = 'flex';
+      }, 400);
+    }
+  </script>
+</body>
+</html>

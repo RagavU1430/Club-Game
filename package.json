@@ -1,0 +1,7 @@
+{
+  "name": "ai-club-game1",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "WordWave — AI semantic club game with participant portal and password-protected admin host controls"
+}

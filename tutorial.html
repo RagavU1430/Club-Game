@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to Play — WordWave Tutorial</title>
+  <meta name="description" content="Learn how to play WordWave: Master semantic clues, rising word stacks, combos, and board-clearing streaks.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate icon" href="favicon.ico">
+  <link rel="stylesheet" href="css/global.css">
+  <style>
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 30px 20px 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .tut-container {
+      max-width: 780px;
+      width: 100%;
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    /* Header */
+    .tut-header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .tut-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 100px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      color: var(--cyan);
+    }
+    .tut-title {
+      font-size: clamp(2.2rem, 5vw, 3.2rem);
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #FFFFFF 20%, var(--cyan) 60%, var(--purple) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .tut-subtitle {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 540px;
+      line-height: 1.5;
+    }
+
+    /* Interactive Sandbox Card */
+    .sandbox-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      border-radius: 20px;
+      padding: 28px 32px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 0 50px rgba(0, 212, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .sandbox-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .sandbox-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sandbox-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--cyan);
+      background: rgba(0, 212, 255, 0.15);
+      padding: 3px 10px;
+      border-radius: 100px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .sandbox-desc {
+      font-size: 0.92rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* Word Chips */
+    .chip-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .sample-word {
+      padding: 8px 18px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s ease;
+    }
+    .sample-word.matched {
+      background: rgba(0, 212, 255, 0.18);
+      border-color: var(--cyan);
+      color: var(--cyan);
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.35);
+    }
+    .sample-score {
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(0, 212, 255, 0.2);
+      display: none;
+    }
+    .sample-word.matched .sample-score {
+      display: inline-block;
+    }
+
+    .sandbox-input-row {
+      display: flex;
+      gap: 10px;
+    }
+    .sandbox-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 1.05rem;
+      font-family: var(--font);
+      font-weight: 600;
+      color: #FFFFFF;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    .sandbox-input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.15);
+    }
+    .sandbox-btn {
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      color: #FFFFFF;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: all 0.2s ease;
+    }
+    .sandbox-btn:hover {
+      filter: brightness(1.12);
+      transform: translateY(-1px);
+    }
+    .sandbox-feedback {
+      font-size: 0.88rem;
+      font-weight: 600;
+      min-height: 20px;
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+
+    /* Step Cards Grid */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+    }
+    .step-card {
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid var(--glass-border);
+      border-radius: 18px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.3s ease;
+    }
+    .step-card:hover {
+      border-color: rgba(0, 212, 255, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    }
+    .step-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+    .step-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #FFFFFF;
+    }
+    .step-text {
+      font-size: 0.92rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .step-text strong {
+      color: var(--cyan);
+    }
+    .step-example {
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: #E2E8F0;
+      border-left: 3px solid var(--cyan);
+      margin-top: 4px;
+    }
+
+    /* Action Footer */
+    .tut-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .btn-play-now {
+      background: linear-gradient(135deg, var(--cyan), var(--purple));
+      color: #FFFFFF;
+      padding: 16px 36px;
+      border-radius: 14px;
+      font-size: 1.1rem;
+      font-weight: 800;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 30px rgba(0, 212, 255, 0.3);
+      transition: all 0.25s ease;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .btn-play-now:hover {
+      filter: brightness(1.15);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 212, 255, 0.45);
+    }
+    .btn-back-home {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--glass-border);
+      color: var(--text);
+      padding: 16px 28px;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s ease;
+    }
+    .btn-back-home:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 600px) {
+      .sandbox-card {
+        padding: 20px 18px;
+      }
+      .sandbox-input-row {
+        flex-direction: column;
+      }
+      .tut-actions {
+        flex-direction: column;
+      }
+      .btn-play-now, .btn-back-home {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-anim"></div>
+
+<main class="tut-container">
+
+  <!-- Header -->
+  <header class="tut-header">
+    <div class="tut-badge">📖 Tutorial & Guide</div>
+    <h1 class="tut-title">How to Play WordWave</h1>
+    <p class="tut-subtitle">
+      WordWave is powered by a real 384-dimensional AI embedding model. It doesn't test spelling — it tests semantic relationships and meaning!
+    </p>
+  </header>
+
+  <!-- Interactive Sandbox -->
+  <section class="sandbox-card">
+    <div class="sandbox-head">
+      <div class="sandbox-title">
+        <span>🧪 Interactive Clue Tester</span>
+      </div>
+      <div class="sandbox-tag" id="ai-status">AI Ready</div>
+    </div>
+    <p class="sandbox-desc">
+      Try typing a clue for one of the sample words below (e.g. type <strong>"feline"</strong> for cat, <strong>"waves"</strong> for ocean, or <strong>"blaze"</strong> for fire):
+    </p>
+
+    <div class="chip-group" id="chip-group">
+      <div class="sample-word" data-word="cat">
+        <span>🐱 cat</span>
+        <span class="sample-score" id="score-cat">0%</span>
+      </div>
+      <div class="sample-word" data-word="ocean">
+        <span>🌊 ocean</span>
+        <span class="sample-score" id="score-ocean">0%</span>
+      </div>
+      <div class="sample-word" data-word="fire">
+        <span>🔥 fire</span>
+        <span class="sample-score" id="score-fire">0%</span>
+      </div>
+      <div class="sample-word" data-word="castle">
+        <span>🏰 castle</span>
+        <span class="sample-score" id="score-castle">0%</span>
+      </div>
+    </div>
+
+    <div class="sandbox-input-row">
+      <input
+        type="text"
+        id="sandbox-input"
+        class="sandbox-input"
+        placeholder="Type a clue (e.g. whisker, tide, ember, fortress)…"
+        autocomplete="off"
+        maxlength="30"
+      >
+      <button class="sandbox-btn" id="sandbox-btn">Test Clue</button>
+    </div>
+
+    <div class="sandbox-feedback" id="sandbox-feedback">
+      💡 Tip: Words with higher semantic similarity score earn bonus points!
+    </div>
+  </section>
+
+  <!-- Gemini AI Deep Word & Relation Analyzer -->
+  <section class="sandbox-card" style="border-color: rgba(139, 92, 246, 0.4); box-shadow: 0 0 50px rgba(139, 92, 246, 0.12);">
+    <div class="sandbox-head">
+      <div class="sandbox-title">
+        <span>✨ Gemini AI Word &amp; Relation Analyzer</span>
+      </div>
+      <div class="sandbox-tag" style="background: rgba(139, 92, 246, 0.2); color: #C084FC;">Powered by Gemini 2.5 Flash</div>
+    </div>
+    <p class="sandbox-desc">
+      Analyze the semantic relationship and conceptual connection between <strong>ANY two words</strong>, powered by Google Gemini:
+    </p>
+
+    <div class="sandbox-input-row" style="gap: 12px; flex-wrap: wrap;">
+      <input
+        type="text"
+        id="gemini-word-a"
+        class="sandbox-input"
+        placeholder="Enter Clue / Concept (e.g. 'whisker')"
+        style="flex: 1 1 200px;"
+        maxlength="40"
+      >
+      <input
+        type="text"
+        id="gemini-word-b"
+        class="sandbox-input"
+        placeholder="Enter Target Word (e.g. 'cat')"
+        style="flex: 1 1 200px;"
+        maxlength="40"
+      >
+      <button class="sandbox-btn" id="gemini-analyze-btn" style="background: linear-gradient(135deg, var(--purple), var(--cyan)); flex: 1 1 160px;">
+        ✨ Analyze Relation
+      </button>
+    </div>
+
+    <!-- Results Box -->
+    <div id="gemini-result-box" style="display: none; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 14px; padding: 18px 20px; flex-direction: column; gap: 10px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <div style="font-weight: 800; font-size: 1.15rem; color: #FFFFFF;" id="gemini-pair-label">"whisker" ➔ "cat"</div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span style="font-size: 0.8rem; font-weight: 800; padding: 4px 12px; border-radius: 100px; background: rgba(139, 92, 246, 0.25); color: #C084FC;" id="gemini-rel-tag">Defining Feature</span>
+          <span style="font-size: 1.1rem; font-weight: 900; color: var(--cyan);" id="gemini-score-tag">95% Match</span>
+        </div>
+      </div>
+      <p style="font-size: 0.92rem; color: #E2E8F0; line-height: 1.55; margin: 0;" id="gemini-explanation">
+        Explanation here...
+      </p>
+      <div style="margin-top: 6px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 0.85rem; color: var(--muted);">
+        <strong style="color: var(--cyan);">💡 Gemini Generated Clues for this target:</strong>
+        <span id="gemini-extra-clues" style="color: #F1F5F9; margin-left: 6px;"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 Core Gameplay Pillars -->
+  <div class="steps-grid">
+
+    <!-- Pillar 1 -->
+    <div class="step-card">
+      <div class="step-icon-wrap">🧠</div>
+      <h3 class="step-title">1. Think in Meanings, Not Letters</h3>
+      <p class="step-text">
+        The AI evaluates how closely concepts relate in mathematical space. Synonyms, associations, traits, and contexts all work!
+      </p>
+      <div class="step-example">
+        Target: <strong>dog</strong><br>
+        Clues: <em>bark, puppy, leash, canine, golden retriever</em>
+      </div>
+    </div>
+
+    <!-- Pillar 2 -->
+    <div class="step-card">
+      <div class="step-icon-wrap">📈</div>
+      <h3 class="step-title">2. Target Bonus & Rising Danger</h3>
+      <p class="step-text">
+        Words continuously rise towards the red ceiling. The topmost word is marked as <strong>▶ TARGET</strong>. Clearing it gives extra bonus points and pushes the danger down!
+      </p>
+      <div class="step-example">
+        Top word nearing ceiling? Clear it first to prevent <strong>Game Over</strong>!
+      </div>
+    </div>
+
+    <!-- Pillar 3 -->
+    <div class="step-card">
+      <div class="step-icon-wrap">🔥</div>
+      <h3 class="step-title">3. 5-Hit Streak Clear</h3>
+      <p class="step-text">
+        Clear <strong>5 words consecutively</strong> without a miss to trigger a full-screen <strong>STREAK CLEAR</strong> shockwave that clears all words and grants a huge point bonus!
+      </p>
+      <div class="step-example">
+        Missing or entering an unrelated clue resets your streak dots.
+      </div>
+    </div>
+
+    <!-- Pillar 4 -->
+    <div class="step-card">
+      <div class="step-icon-wrap">⚡</div>
+      <h3 class="step-title">4. Multi-Clear Combos & Rules</h3>
+      <p class="step-text">
+        One clever clue can clear multiple words at once for a <strong>×1.5 or ×2 Combo Multiplier</strong>!
+      </p>
+      <div class="step-example">
+        Target board has <em>ocean</em> &amp; <em>river</em>? Clue: <strong>water</strong> clears both!
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Clue Cheat-Sheet & Inspiration -->
+  <section class="step-card" style="margin-top:4px;">
+    <div class="sandbox-head">
+      <div class="sandbox-title">
+        <span>💡 Clue Inspiration Cheat-Sheet</span>
+      </div>
+      <div class="sandbox-tag">Pro Tips</div>
+    </div>
+    <p class="step-text">
+      Stuck on what makes a high-scoring clue? Here are examples of high-similarity semantic associations:
+    </p>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-top:8px;">
+      <div class="step-example">
+        🐺 <strong>wolf</strong><br>
+        Clues: <em>pack, howl, moon, predator, alpha</em>
+      </div>
+      <div class="step-example">
+        🌋 <strong>volcano</strong><br>
+        Clues: <em>lava, magma, eruption, caldera, ash</em>
+      </div>
+      <div class="step-example">
+        🧭 <strong>compass</strong><br>
+        Clues: <em>north, needle, navigation, direction</em>
+      </div>
+      <div class="step-example">
+        ☕ <strong>coffee</strong><br>
+        Clues: <em>caffeine, espresso, brew, roast, beans</em>
+      </div>
+      <div class="step-example">
+        👑 <strong>crown</strong><br>
+        Clues: <em>royalty, monarch, king, queen, gold</em>
+      </div>
+      <div class="step-example">
+        🌀 <strong>chaos</strong><br>
+        Clues: <em>disorder, entropy, mayhem, anarchy</em>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom CTA -->
+  <div class="tut-actions">
+    <a class="btn-play-now" href="arcade.html">
+      Start Arcade Game <span>→</span>
+    </a>
+    <a class="btn-back-home" href="index.html">
+      ← Back to Home
+    </a>
+  </div>
+
+</main>
+
+<script type="module">
+  import { semanticEngine, THRESHOLD_GOOD, THRESHOLD_PERFECT } from './js/semantic.js';
+
+  const inputEl    = document.getElementById('sandbox-input');
+  const btnEl      = document.getElementById('sandbox-btn');
+  const feedbackEl = document.getElementById('sandbox-feedback');
+  const aiStatusEl = document.getElementById('ai-status');
+
+  // Pre-load model in background
+  semanticEngine.init(({ status, progress }) => {
+    if (status === 'downloading') {
+      aiStatusEl.textContent = `Loading AI… ${Math.round(progress || 0)}%`;
+    }
+    if (status === 'ready' || status === 'done') {
+      aiStatusEl.textContent = '✅ AI Engine Ready';
+    }
+  }).catch(() => {
+    aiStatusEl.textContent = '⚡ Running Local';
+  });
+
+  const sampleWords = ['cat', 'ocean', 'fire', 'castle'];
+
+  async function testClue() {
+    const clue = inputEl.value.trim().toLowerCase();
+    if (!clue || clue.length < 2) {
+      feedbackEl.textContent = '⚠️ Type at least 2 characters.';
+      feedbackEl.style.color = 'var(--warn)';
+      return;
+    }
+
+    if (sampleWords.includes(clue)) {
+      feedbackEl.textContent = '⚠️ Golden rule: You cannot type the word itself! Give a clue.';
+      feedbackEl.style.color = 'var(--warn)';
+      return;
+    }
+
+    btnEl.disabled = true;
+    feedbackEl.textContent = '🧠 AI calculating semantic vectors…';
+    feedbackEl.style.color = 'var(--cyan)';
+
+    try {
+      const results = await semanticEngine.findMatches(clue, sampleWords);
+      const top = results[0];
+
+      // Update chips UI
+      sampleWords.forEach(w => {
+        const chip = document.querySelector(`.sample-word[data-word="${w}"]`);
+        const scoreSpan = document.getElementById(`score-${w}`);
+        const res = results.find(r => r.word === w);
+        const pct = Math.max(0, Math.min(100, Math.round(((res.score + 0.1) / 1.0) * 100)));
+
+        scoreSpan.textContent = `${pct}%`;
+
+        if (res.score >= THRESHOLD_GOOD) {
+          chip.classList.add('matched');
+        } else {
+          chip.classList.remove('matched');
+        }
+      });
+
+      if (top.score >= THRESHOLD_PERFECT) {
+        feedbackEl.textContent = `🔥 Perfect match! "${clue}" strongly matches "${top.word}" (${Math.round(top.score * 100)}% similarity).`;
+        feedbackEl.style.color = 'var(--cyan)';
+      } else if (top.score >= THRESHOLD_GOOD) {
+        feedbackEl.textContent = `✅ Good hit! "${clue}" matches "${top.word}".`;
+        feedbackEl.style.color = 'var(--success)';
+      } else {
+        feedbackEl.textContent = `⚠️ Too distant: "${clue}" didn't score high enough for any sample word. Try a closer concept!`;
+        feedbackEl.style.color = 'var(--warn)';
+      }
+
+    } catch (err) {
+      feedbackEl.textContent = '⚠️ AI is downloading or initialising. Please wait a moment.';
+      feedbackEl.style.color = 'var(--warn)';
+    }
+
+    btnEl.disabled = false;
+  }
+
+  btnEl.addEventListener('click', testClue);
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter') testClue();
+  });
+
+  // ─── Gemini Analyzer Handler ──────────────────────────
+  import { geminiService } from './js/gemini.js';
+
+  const wordAInput = document.getElementById('gemini-word-a');
+  const wordBInput = document.getElementById('gemini-word-b');
+  const analyzeBtn = document.getElementById('gemini-analyze-btn');
+  const resultBox  = document.getElementById('gemini-result-box');
+  const pairLabel  = document.getElementById('gemini-pair-label');
+  const relTag     = document.getElementById('gemini-rel-tag');
+  const scoreTag   = document.getElementById('gemini-score-tag');
+  const explEl     = document.getElementById('gemini-explanation');
+  const extraClues = document.getElementById('gemini-extra-clues');
+
+  async function runGeminiAnalysis() {
+    const wordA = wordAInput.value.trim().toLowerCase();
+    const wordB = wordBInput.value.trim().toLowerCase();
+
+    if (!wordA || !wordB) {
+      alert('Please enter both words to analyze their relationship.');
+      return;
+    }
+
+    analyzeBtn.disabled = true;
+    analyzeBtn.textContent = '✨ Analyzing with Gemini…';
+
+    try {
+      const [relation, clues] = await Promise.all([
+        geminiService.analyzeRelation(wordA, wordB),
+        geminiService.generateCluesForWord(wordB, 5)
+      ]);
+
+      if (relation) {
+        pairLabel.textContent = `"${wordA}" ➔ "${wordB}"`;
+        relTag.textContent = relation.relationship || 'Association';
+        scoreTag.textContent = `${Math.round(relation.score * 100)}% Match`;
+        explEl.textContent = relation.explanation || 'Semantic relation verified by Gemini.';
+        extraClues.textContent = (clues && clues.length) ? clues.join(', ') : 'None generated';
+        resultBox.style.display = 'flex';
+      } else {
+        alert('Could not retrieve analysis from Gemini API. Please check your network connection.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error analyzing words with Gemini.');
+    } finally {
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = '✨ Analyze Relation';
+    }
+  }
+
+  analyzeBtn.addEventListener('click', runGeminiAnalysis);
+  wordAInput.addEventListener('keydown', e => { if (e.key === 'Enter') runGeminiAnalysis(); });
+  wordBInput.addEventListener('keydown', e => { if (e.key === 'Enter') runGeminiAnalysis(); });
+</script>
+
+</body>
+</html>

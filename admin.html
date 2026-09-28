@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Host Portal — WordWave Tournament</title>
+  <meta name="description" content="Password-protected host command center for WordWave club tournaments. Control match states and view live 30-team rankings.">
+  <meta name="theme-color" content="#08080F">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head>
+<body class="admin-body">
+  <div class="bg-anim"></div>
+
+  <!-- ─── Password Gate Overlay ────────────────────────── -->
+  <div class="auth-overlay" id="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-icon-wrap">🛡️</div>
+      <div>
+        <h2 class="auth-title">Host <span>Command</span></h2>
+        <p class="auth-desc">Enter the Admin Master Password to access match controls, participant broadcast, and tournament leaderboard.</p>
+      </div>
+
+      <form class="auth-form" id="auth-form" onsubmit="return false;">
+        <div class="auth-field">
+          <label for="admin-pass-input" class="auth-label">ADMIN PASSWORD</label>
+          <div class="auth-input-wrap">
+            <input type="password" id="admin-pass-input" class="auth-input" placeholder="Enter password…" autocomplete="current-password" autofocus>
+            <button type="button" class="auth-toggle-pass" id="toggle-pass-btn" title="Show/Hide Password">👁️</button>
+          </div>
+        </div>
+
+        <div class="auth-error" id="auth-error">Incorrect password. Please try again.</div>
+
+        <button type="submit" class="auth-btn-submit" id="auth-submit-btn">🔓 UNLOCK HOST CONTROLS</button>
+      </form>
+
+      <div class="auth-hint">
+        Default Club Password: <strong>admin123</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Authenticated Admin Dashboard ────────────────── -->
+  <div class="admin-container" id="admin-dashboard" style="display:none;">
+
+    <!-- Navbar -->
+    <header class="admin-navbar">
+      <div class="admin-nav-brand">
+        <div class="brand-badge">👑</div>
+        <div class="brand-text">
+          <h1>WordWave <span>Club Tournament</span></h1>
+          <span>Host Master Portal</span>
+        </div>
+      </div>
+
+      <div class="admin-nav-actions">
+        <a href="participant.html" target="_blank" class="btn-secondary" style="font-size:0.85rem;padding:9px 16px;">
+          👥 Open Participant View ↗
+        </a>
+        <button type="button" class="btn-secondary" id="change-pass-btn" style="font-size:0.85rem;padding:9px 16px;">
+          🔑 Change Password
+        </button>
+        <button type="button" class="btn-secondary" id="logout-btn" style="font-size:0.85rem;padding:9px 16px;color:#F87171;">
+          🚪 Logout
+        </button>
+      </div>
+    </header>
+
+    <!-- Top Stats Overview -->
+    <div class="admin-stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">📡</div>
+        <div class="stat-meta">
+          <div class="stat-label">MATCH STATUS</div>
+          <div class="stat-val" id="stat-match-status" style="color:var(--cyan);font-size:1.15rem;">LOBBY READY</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-meta">
+          <div class="stat-label">PARTICIPATING TEAMS</div>
+          <div class="stat-val" id="stat-team-count">0</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-meta">
+          <div class="stat-label">HIGH SCORE</div>
+          <div class="stat-val" id="stat-high-score">0</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">🔥</div>
+        <div class="stat-meta">
+          <div class="stat-label">BEST STREAK</div>
+          <div class="stat-val" id="stat-best-streak">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Match Broadcast Controller -->
+    <section class="match-control-card">
+      <div class="control-header">
+        <div class="control-title-group">
+          <h2>
+            <span>⚡</span> Tournament Match Controller
+          </h2>
+          <p>Broadcast match states to all connected participants in real time.</p>
+        </div>
+
+        <div class="match-status-badge lobby" id="current-badge">
+          <span class="status-dot"></span>
+          <span id="current-badge-text">LOBBY OPEN</span>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="control-buttons-row">
+        <button type="button" class="btn-admin-cta launch" id="btn-broadcast-start">
+          <span>🚀</span> BROADCAST START (3s COUNTDOWN)
+        </button>
+
+        <button type="button" class="btn-admin-cta secondary" id="btn-broadcast-pause">
+          <span>⏸️</span> PAUSE MATCH
+        </button>
+
+        <button type="button" class="btn-admin-cta secondary" id="btn-broadcast-lobby">
+          <span>🔄</span> RETURN ALL TO LOBBY
+        </button>
+      </div>
+
+      <!-- Live Announcement Banner Broadcaster -->
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:rgba(255,255,255,0.03);padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,0.06);">
+        <label for="broadcast-msg-input" style="font-size:0.75rem;font-weight:800;color:var(--muted);white-space:nowrap;letter-spacing:0.08em;">
+          📢 LIVE HOST ANNOUNCEMENT:
+        </label>
+        <input type="text" id="broadcast-msg-input" class="search-input" style="flex:1;min-width:240px;" placeholder="e.g. Round 1 has started! Good luck teams!" maxlength="70">
+        <button type="button" class="btn-secondary" id="btn-send-announcement" style="padding:8px 18px;font-size:0.85rem;white-space:nowrap;">
+          Send Broadcast
+        </button>
+      </div>
+    </section>
+
+    <!-- Tournament 30-Team Leaderboard -->
+    <section class="admin-card">
+      <div class="card-top-bar">
+        <div class="card-title-group">
+          <h3>🏆 Live Tournament Leaderboard</h3>
+          <p>Real-time ranking of team scores, survival times, and streaks.</p>
+        </div>
+
+        <div class="table-filter-wrap">
+          <input type="text" id="table-search" class="search-input" placeholder="🔍 Search team or badge…">
+          <button type="button" class="btn-secondary" id="btn-export-csv" style="font-size:0.85rem;padding:8px 16px;">
+            📥 Export CSV
+          </button>
+          <button type="button" class="btn-admin-cta danger" id="btn-clear-lb" style="font-size:0.85rem;padding:8px 16px;">
+            🗑️ Reset Board
+          </button>
+        </div>
+      </div>
+
+      <div class="lb-table-container">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th style="width:70px;">Rank</th>
+              <th>Team Name</th>
+              <th>Score</th>
+              <th>Survival Time</th>
+              <th>Max Streak</th>
+              <th>Recorded At</th>
+              <th style="width:70px;text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="admin-table-body">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div id="admin-lb-empty" style="text-align:center;padding:36px;color:var(--muted);font-weight:600;display:none;">
+        No team scores recorded yet. When participants complete a round, scores will appear here automatically!
+      </div>
+    </section>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div class="admin-modal-overlay" id="change-pass-modal" style="display:none;">
+    <div class="admin-modal-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 style="font-size:1.15rem;font-weight:900;color:#FFF;">🔑 Change Host Password</h3>
+        <button type="button" id="close-change-pass-btn" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
+      </div>
+
+      <form id="change-pass-form" onsubmit="return false;" style="display:flex;flex-direction:column;gap:14px;">
+        <div class="auth-field">
+          <label for="new-pass-input" class="auth-label">NEW PASSWORD (MIN 4 CHARS)</label>
+          <input type="password" id="new-pass-input" class="auth-input" placeholder="Enter new password…" autocomplete="new-password">
+        </div>
+        <div class="auth-field">
+          <label for="confirm-pass-input" class="auth-label">CONFIRM PASSWORD</label>
+          <input type="password" id="confirm-pass-input" class="auth-input" placeholder="Confirm new password…" autocomplete="new-password">
+        </div>
+
+        <div class="auth-error" id="change-pass-error"></div>
+
+        <button type="submit" class="auth-btn-submit" id="save-new-pass-btn">Save New Password</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Audio Context for Countdown Beeps -->
+  <script type="module">
+    import {
+      getAdminPassword,
+      setAdminPassword,
+      verifyAdminPassword,
+      isAdminAuthenticated,
+      adminLogout,
+      getLeaderboard,
+      deleteLeaderboardEntry,
+      clearLeaderboard,
+      exportLeaderboardCSV,
+      getMatchState,
+      broadcastMatchState
+    } from './js/storage.js';
+    import { audio, sound } from './js/audio.js';
+
+    // ─── Elements ──────────────────────────────────────────
+    const authOverlay        = document.getElementById('auth-overlay');
+    const adminDashboard     = document.getElementById('admin-dashboard');
+    const passInput          = document.getElementById('admin-pass-input');
+    const togglePassBtn      = document.getElementById('toggle-pass-btn');
+    const authForm           = document.getElementById('auth-form');
+    const authError          = document.getElementById('auth-error');
+    const logoutBtn          = document.getElementById('logout-btn');
+
+    const statMatchStatus    = document.getElementById('stat-match-status');
+    const statTeamCount      = document.getElementById('stat-team-count');
+    const statHighScore      = document.getElementById('stat-high-score');
+    const statBestStreak     = document.getElementById('stat-best-streak');
+
+    const currentBadge       = document.getElementById('current-badge');
+    const currentBadgeText   = document.getElementById('current-badge-text');
+
+    const btnBroadcastStart  = document.getElementById('btn-broadcast-start');
+    const btnBroadcastPause  = document.getElementById('btn-broadcast-pause');
+    const btnBroadcastLobby  = document.getElementById('btn-broadcast-lobby');
+    const broadcastMsgInput  = document.getElementById('broadcast-msg-input');
+    const btnSendAnnouncement= document.getElementById('btn-send-announcement');
+
+    const tableSearch        = document.getElementById('table-search');
+    const adminTableBody     = document.getElementById('admin-table-body');
+    const adminLbEmpty       = document.getElementById('admin-lb-empty');
+    const btnExportCsv       = document.getElementById('btn-export-csv');
+    const btnClearLb         = document.getElementById('btn-clear-lb');
+
+    const changePassBtn      = document.getElementById('change-pass-btn');
+    const changePassModal    = document.getElementById('change-pass-modal');
+    const closeChangePassBtn = document.getElementById('close-change-pass-btn');
+    const changePassForm     = document.getElementById('change-pass-form');
+    const newPassInput       = document.getElementById('new-pass-input');
+    const confirmPassInput   = document.getElementById('confirm-pass-input');
+    const changePassError    = document.getElementById('change-pass-error');
+
+    // ─── Authentication Flow ───────────────────────────────
+    function checkAuth() {
+      if (isAdminAuthenticated()) {
+        authOverlay.style.display = 'none';
+        adminDashboard.style.display = 'flex';
+        initDashboard();
+      } else {
+        authOverlay.style.display = 'flex';
+        adminDashboard.style.display = 'none';
+        passInput.value = '';
+        passInput.focus();
+      }
+    }
+
+    authForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = passInput.value;
+      if (verifyAdminPassword(input)) {
+        authError.style.display = 'none';
+        try { (audio.levelUp || audio.hitPerfect).call(audio); } catch {}
+        checkAuth();
+      } else {
+        authError.style.display = 'block';
+        passInput.style.borderColor = '#EF4444';
+        try { audio.miss?.(); } catch {}
+        setTimeout(() => { passInput.style.borderColor = ''; }, 1200);
+      }
+    });
+
+    togglePassBtn.addEventListener('click', () => {
+      passInput.type = passInput.type === 'password' ? 'text' : 'password';
+      togglePassBtn.textContent = passInput.type === 'password' ? '👁️' : '🔒';
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      if (confirm('Logout of Admin Host Portal?')) {
+        adminLogout();
+        checkAuth();
+      }
+    });
+
+    // ─── Dashboard Controller ──────────────────────────────
+    function initDashboard() {
+      renderMatchStateUI();
+      renderLeaderboard();
+      // Listen to cross-tab updates (participants finishing games, scores submitting)
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'wordwave_leaderboard' || e.key === 'wordwave_match_state') {
+          renderLeaderboard();
+          renderMatchStateUI();
+        }
+      });
+    }
+
+    function renderMatchStateUI() {
+      const state = getMatchState();
+      statMatchStatus.textContent = state.status;
+      currentBadgeText.textContent = state.status;
+
+      currentBadge.className = 'match-status-badge';
+      if (state.status === 'ACTIVE') {
+        currentBadge.classList.add('active');
+        statMatchStatus.style.color = '#4ADE80';
+      } else if (state.status === 'COUNTDOWN') {
+        currentBadge.classList.add('countdown');
+        statMatchStatus.style.color = '#FBBF24';
+      } else {
+        currentBadge.classList.add('lobby');
+        statMatchStatus.style.color = 'var(--cyan)';
+      }
+    }
+
+    function renderLeaderboard() {
+      const entries = getLeaderboard();
+      const query = (tableSearch.value || '').trim().toLowerCase();
+
+      // Stats
+      statTeamCount.textContent = entries.length;
+      const topScore = entries.length ? Math.max(...entries.map(e => e.score || 0)) : 0;
+      statHighScore.textContent = topScore.toLocaleString();
+      const maxStreak = entries.length ? Math.max(...entries.map(e => e.maxStreak || 0)) : 0;
+      statBestStreak.textContent = maxStreak + ' 🔥';
+
+      const filtered = entries.filter(e => {
+        if (!query) return true;
+        return (e.teamName && e.teamName.toLowerCase().includes(query)) ||
+               (e.badge && e.badge.includes(query));
+      });
+
+      adminTableBody.innerHTML = '';
+      if (!filtered.length) {
+        adminLbEmpty.style.display = 'block';
+        return;
+      }
+      adminLbEmpty.style.display = 'none';
+
+      filtered.forEach((e, idx) => {
+        const tr = document.createElement('tr');
+        const rank = idx + 1;
+        let rankClass = '';
+        if (rank === 1) rankClass = 'gold';
+        else if (rank === 2) rankClass = 'silver';
+        else if (rank === 3) rankClass = 'bronze';
+
+        const mins = Math.floor((e.time || 0) / 60);
+        const secs = (e.time || 0) % 60;
+        const timeFormatted = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+
+        tr.innerHTML = `
+          <td><span class="rank-badge ${rankClass}">#${rank}</span></td>
+          <td>
+            <div class="admin-team-cell">
+              <span class="admin-team-badge">${e.badge || '⚡'}</span>
+              <span class="admin-team-name">${e.teamName || 'Unknown Team'}</span>
+            </div>
+          </td>
+          <td style="font-weight:800;color:var(--cyan);font-size:0.95rem;">${(e.score || 0).toLocaleString()}</td>
+          <td>${timeFormatted}</td>
+          <td><strong style="color:#FFD700;">${e.maxStreak || 0}</strong> 🔥</td>
+          <td style="color:var(--muted);font-size:0.8rem;">${e.date || 'Just now'}</td>
+          <td style="text-align:center;">
+            <button type="button" class="btn-del-entry" data-id="${e.id}" title="Delete score entry">🗑️</button>
+          </td>
+        `;
+        adminTableBody.appendChild(tr);
+      });
+
+      // Hook delete handlers
+      adminTableBody.querySelectorAll('.btn-del-entry').forEach(btn => {
+        btn.addEventListener('click', (ev) => {
+          const id = ev.currentTarget.getAttribute('data-id');
+          if (confirm('Delete this team score record?')) {
+            deleteLeaderboardEntry(id);
+            renderLeaderboard();
+          }
+        });
+      });
+    }
+
+    tableSearch.addEventListener('input', renderLeaderboard);
+
+    // ─── Broadcast Controls ────────────────────────────────
+    btnBroadcastStart.addEventListener('click', () => {
+      // Broadcast countdown
+      broadcastMatchState({
+        status: 'COUNTDOWN',
+        countdownDuration: 3,
+        message: 'Get Ready! Match starts in 3 seconds!'
+      });
+      audio.countdown(3);
+      renderMatchStateUI();
+
+      // Automatically flip to ACTIVE after 3.2s
+      setTimeout(() => {
+        broadcastMatchState({
+          status: 'ACTIVE',
+          message: 'Match is LIVE! Clear words!'
+        });
+        renderMatchStateUI();
+      }, 3400);
+    });
+
+    btnBroadcastPause.addEventListener('click', () => {
+      broadcastMatchState({
+        status: 'PAUSED',
+        message: 'Match paused by host.'
+      });
+      renderMatchStateUI();
+    });
+
+    btnBroadcastLobby.addEventListener('click', () => {
+      broadcastMatchState({
+        status: 'LOBBY',
+        message: 'Round reset. Please choose your team in the lobby.'
+      });
+      renderMatchStateUI();
+    });
+
+    btnSendAnnouncement.addEventListener('click', () => {
+      const msg = broadcastMsgInput.value.trim();
+      if (!msg) return;
+      broadcastMatchState({
+        message: msg
+      });
+      broadcastMsgInput.value = '';
+      alert(`Broadcast sent to all participants:\n"${msg}"`);
+    });
+
+    // ─── Export & Clear Leaderboard ────────────────────────
+    btnExportCsv.addEventListener('click', () => {
+      const csv = exportLeaderboardCSV();
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `wordwave_leaderboard_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    btnClearLb.addEventListener('click', () => {
+      if (confirm('Are you sure you want to RESET the entire tournament leaderboard? This cannot be undone.')) {
+        clearLeaderboard();
+        renderLeaderboard();
+      }
+    });
+
+    // ─── Password Change ───────────────────────────────────
+    changePassBtn.addEventListener('click', () => {
+      changePassModal.style.display = 'flex';
+      newPassInput.value = '';
+      confirmPassInput.value = '';
+      changePassError.style.display = 'none';
+      newPassInput.focus();
+    });
+
+    closeChangePassBtn.addEventListener('click', () => {
+      changePassModal.style.display = 'none';
+    });
+
+    changePassForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const p1 = newPassInput.value.trim();
+      const p2 = confirmPassInput.value.trim();
+
+      if (p1.length < 4) {
+        changePassError.textContent = 'Password must be at least 4 characters long';
+        changePassError.style.display = 'block';
+        return;
+      }
+      if (p1 !== p2) {
+        changePassError.textContent = 'Passwords do not match';
+        changePassError.style.display = 'block';
+        return;
+      }
+
+      setAdminPassword(p1);
+      alert('Admin password successfully updated!');
+      changePassModal.style.display = 'none';
+    });
+
+    // Initial load check
+    checkAuth();
+  </script>
+</body>
+</html>

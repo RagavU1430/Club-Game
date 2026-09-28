@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WordWave — Arcade Mode</title>
+  <meta name="description" content="WordWave Arcade: Type semantic clues to clear rising words before they overflow. Build streaks to trigger a board-clearing STREAK CLEAR!">
+  <meta name="theme-color" content="#08080F">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate icon" href="favicon.ico">
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/arcade.css">
+</head>
+<body>
+
+<div class="bg-anim"></div>
+
+<!-- Loading overlay (model) -->
+<div id="loading-screen">
+  <div class="load-logo">WordWave</div>
+  <div class="load-tagline">Arcade Mode</div>
+  <div class="load-spinner"></div>
+  <div class="load-progress-wrap">
+    <div class="load-bar-track">
+      <div class="load-bar-fill" id="load-bar"></div>
+    </div>
+    <div class="load-status" id="load-status">Loading AI…</div>
+  </div>
+  <div class="load-fact" id="load-fact">
+    Get ready — words will rise and you must clear them!
+  </div>
+</div>
+
+<!-- Arcade Game -->
+<div class="arcade-wrapper" id="game-wrap" style="display:none;">
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-score" id="score-display">0</div>
+    <div class="hud-center">
+      <a class="back-btn" href="index.html" aria-label="Back to Home">← HOME</a>
+      <div class="hud-team-pill" id="hud-team-display" title="Active Team (Click to edit team / open host controls)">
+        <span id="hud-team-badge">⚡</span>
+        <span id="hud-team-name">Team Alpha</span>
+      </div>
+    </div>
+    <div class="hud-right-group">
+      <button class="sound-toggle-btn" id="host-btn" title="Host Controls" aria-label="Host Master Controls">👑</button>
+      <button class="sound-toggle-btn" id="leaderboard-btn" title="Club Leaderboard" aria-label="Club Leaderboard">🏆</button>
+      <button class="sound-toggle-btn" id="help-btn" title="Tutorial &amp; Guide" aria-label="Tutorial and Guide">❓</button>
+      <button class="sound-toggle-btn" id="sound-btn" title="Toggle Sound" aria-label="Toggle Sound">🔊</button>
+      <div class="hud-right" id="timer-display">00:00</div>
+    </div>
+  </div>
+
+  <!-- Stack area -->
+  <div class="stack-area" id="stack-area">
+    <!-- Top danger line -->
+    <div class="danger-line" id="danger-line"></div>
+
+    <!-- Particle canvas -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Word stack: new words at bottom, rises up -->
+    <div class="word-stack" id="word-stack"></div>
+
+    <!-- Streak dots (5 = streak clear) -->
+    <div class="streak-dots" id="streak-dots"></div>
+
+    <!-- Combo badge -->
+    <div class="combo-badge" id="combo-badge"></div>
+
+    <!-- STREAK CLEAR banner -->
+    <div class="streak-banner" id="streak-banner">
+      <h2>STREAK CLEAR!</h2>
+      <p>All words cleared</p>
+    </div>
+
+    <!-- Robot Companion / Word Thrower -->
+    <div class="robot-companion" id="robot-companion" aria-hidden="true">
+      <div class="robot-speech" id="robot-speech"></div>
+      <div class="robot-body-wrapper" id="robot-body-wrapper">
+        <svg class="robot-svg" viewBox="0 0 100 120" width="76" height="92" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="botPlate" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1E2338"/>
+              <stop offset="100%" stop-color="#0E101E"/>
+            </linearGradient>
+            <linearGradient id="botCore" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00D4FF"/>
+              <stop offset="100%" stop-color="#8B5CF6"/>
+            </linearGradient>
+            <linearGradient id="botFlame" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#00D4FF"/>
+              <stop offset="55%" stop-color="#8B5CF6"/>
+              <stop offset="100%" stop-color="transparent"/>
+            </linearGradient>
+            <filter id="botNeonGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="2.5" result="blur"/>
+              <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+            </filter>
+          </defs>
+
+          <!-- Hover Thruster Exhaust Plume -->
+          <g class="robot-thruster">
+            <ellipse cx="50" cy="98" rx="14" ry="4" fill="rgba(0, 212, 255, 0.35)" filter="url(#botNeonGlow)"/>
+            <path class="thruster-flame" d="M 40 98 Q 50 118 60 98 Z" fill="url(#botFlame)" filter="url(#botNeonGlow)"/>
+            <path class="thruster-flame-inner" d="M 44 98 Q 50 110 56 98 Z" fill="#00D4FF"/>
+          </g>
+
+          <!-- Left Arm (Stabilizer) -->
+          <g class="robot-left-arm">
+            <rect x="22" y="58" width="8" height="22" rx="4" fill="url(#botPlate)" stroke="rgba(255,255,255,0.15)" stroke-width="1.5"/>
+            <circle cx="26" cy="80" r="4" fill="#00D4FF" opacity="0.8"/>
+          </g>
+
+          <!-- Torso -->
+          <g class="robot-torso">
+            <rect x="30" y="52" width="40" height="38" rx="8" fill="url(#botPlate)" stroke="rgba(0, 212, 255, 0.4)" stroke-width="1.5"/>
+            <rect x="36" y="58" width="28" height="4" rx="2" fill="rgba(255,255,255,0.1)"/>
+            <circle class="robot-core" cx="50" cy="72" r="8" fill="url(#botCore)" filter="url(#botNeonGlow)"/>
+            <circle cx="50" cy="72" r="3.5" fill="#FFFFFF"/>
+          </g>
+
+          <!-- Antenna -->
+          <g class="robot-antenna">
+            <line x1="50" y1="22" x2="50" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="2.5" stroke-linecap="round"/>
+            <circle class="antenna-bulb" cx="50" cy="10" r="4" fill="#00D4FF" filter="url(#botNeonGlow)"/>
+          </g>
+
+          <!-- Head -->
+          <g class="robot-head">
+            <rect x="30" y="20" width="40" height="30" rx="8" fill="url(#botPlate)" stroke="rgba(0, 212, 255, 0.5)" stroke-width="1.5"/>
+            <!-- Side ear bolts -->
+            <rect x="26" y="29" width="4" height="12" rx="2" fill="#8B5CF6"/>
+            <rect x="70" y="29" width="4" height="12" rx="2" fill="#8B5CF6"/>
+            <!-- Visor Screen -->
+            <rect class="visor-screen" x="35" y="26" width="30" height="18" rx="5" fill="#070810" stroke="rgba(0,212,255,0.3)" stroke-width="1"/>
+            <!-- Visor LED Eyes -->
+            <g class="robot-eyes" id="robot-eyes">
+              <ellipse class="eye eye-left" cx="43" cy="35" rx="3.5" ry="4" fill="#00D4FF" filter="url(#botNeonGlow)"/>
+              <ellipse class="eye eye-right" cx="57" cy="35" rx="3.5" ry="4" fill="#00D4FF" filter="url(#botNeonGlow)"/>
+            </g>
+          </g>
+
+          <!-- Right Arm (Articulated Throwing Arm) -->
+          <g class="robot-throw-arm" id="robot-throw-arm">
+            <!-- Shoulder joint -->
+            <circle cx="70" cy="56" r="5" fill="#8B5CF6"/>
+            <!-- Upper arm -->
+            <rect x="67" y="56" width="8" height="20" rx="4" fill="url(#botPlate)" stroke="rgba(0, 212, 255, 0.4)" stroke-width="1.5"/>
+            <!-- Elbow joint -->
+            <circle cx="71" cy="76" r="4" fill="#00D4FF"/>
+            <!-- Forearm -->
+            <rect x="67" y="76" width="8" height="18" rx="3" fill="url(#botPlate)" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1.5"/>
+            <!-- Claw Hand -->
+            <path class="robot-claw" d="M 64 94 Q 71 100 78 94 Q 75 90 71 92 Z" fill="#00D4FF" filter="url(#botNeonGlow)"/>
+            <!-- Held Orb -->
+            <circle class="robot-held-orb" id="robot-held-orb" cx="71" cy="98" r="4.5" fill="#00D4FF" filter="url(#botNeonGlow)"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input area -->
+  <div class="input-area">
+    <!-- Similarity indicator -->
+    <div class="sim-indicator" id="sim-indicator" aria-live="polite">
+      <span class="sim-label">Match</span>
+      <div class="sim-track">
+        <div class="sim-fill" id="sim-fill" style="width:0%"></div>
+      </div>
+      <span class="sim-pct" id="sim-pct"></span>
+    </div>
+
+    <div class="input-row">
+      <input
+        type="text"
+        id="word-input"
+        class="word-input"
+        placeholder="Type a clue and press Enter…"
+        aria-label="Semantic clue input"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        maxlength="40"
+        enterkeyhint="go"
+      >
+      <button class="submit-btn" id="submit-btn" aria-label="Submit clue">ENTER</button>
+    </div>
+    <div class="feedback-text" id="feedback-text" aria-live="polite" role="status"></div>
+    <div class="target-hint">🎯 TOP word is the <strong>TARGET</strong> (+40 bonus) — clear it first!</div>
+  </div>
+
+</div>
+
+<!-- In-Game Step-by-Step Tutorial Overlay -->
+<div class="tutorial-overlay" id="tutorial-overlay" role="dialog" aria-modal="true" aria-label="Game Tutorial">
+  <div class="tutorial-modal">
+    <div class="tut-top-row">
+      <span class="tut-badge-pill">⚡ Tutorial</span>
+      <span class="tut-step-counter" id="tut-step-counter">Step 1 of 4</span>
+    </div>
+
+    <!-- Step 1: AI Semantics -->
+    <div class="tut-step-pane active" data-step="0">
+      <div class="tut-step-header">
+        <div class="tut-step-icon">🧠</div>
+        <div>
+          <div class="tut-step-title">AI Semantic Clues</div>
+          <div style="font-size:0.8rem;color:var(--cyan);font-weight:700;">Meaning, Not Spelling</div>
+        </div>
+      </div>
+      <p class="tut-step-body">
+        Type any word related to words in the stack. The AI calculates conceptual closeness in mathematical space — it understands <strong>synonyms and meaning</strong>!
+      </p>
+      <div class="tut-visual-box">
+        <div class="tut-match-preview">
+          <div class="tut-chip clue">Clue: "whisker"</div>
+          <div style="font-size:1.2rem;color:var(--cyan);">➔</div>
+          <div class="tut-chip target">Word: "cat"</div>
+        </div>
+        <div style="font-size:0.78rem;color:var(--warn);text-align:center;font-weight:600;">
+          ⚠️ Golden Rule: Never type the word itself — give a related clue!
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Rising Stack & Target -->
+    <div class="tut-step-pane" data-step="1">
+      <div class="tut-step-header">
+        <div class="tut-step-icon">📈</div>
+        <div>
+          <div class="tut-step-title">Rising Stack &amp; Target</div>
+          <div style="font-size:0.8rem;color:var(--danger);font-weight:700;">Prevent Ceiling Overflow</div>
+        </div>
+      </div>
+      <p class="tut-step-body">
+        New words crawl upward toward the red danger line. If words reach the ceiling, it's <strong>Game Over</strong>!
+      </p>
+      <div class="tut-visual-box">
+        <div style="border-bottom:2px dashed var(--danger);padding-bottom:4px;font-size:0.75rem;color:var(--danger);font-weight:800;letter-spacing:0.1em;text-transform:uppercase;">
+          🚨 TOP DANGER CEILING
+        </div>
+        <div style="background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.4);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+          <span style="font-weight:800;color:var(--cyan);">▶ ocean</span>
+          <span style="font-size:0.7rem;background:rgba(0,212,255,0.25);color:var(--cyan);padding:2px 8px;border-radius:100px;font-weight:800;">TARGET (+40 BONUS)</span>
+        </div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-top:4px;">
+          Clearing the top <strong>TARGET</strong> relieves ceiling pressure and awards bonus points!
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Streak Clear -->
+    <div class="tut-step-pane" data-step="2">
+      <div class="tut-step-header">
+        <div class="tut-step-icon">🔥</div>
+        <div>
+          <div class="tut-step-title">5-Hit Streak Clear</div>
+          <div style="font-size:0.8rem;color:#FFD700;font-weight:700;">Full Board Shockwave</div>
+        </div>
+      </div>
+      <p class="tut-step-body">
+        Chain <strong>5 successful hits</strong> without a miss to trigger a screen-wiping <strong>STREAK CLEAR</strong> shockwave!
+      </p>
+      <div class="tut-visual-box">
+        <div style="display:flex;justify-content:center;gap:10px;padding:10px 0;">
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);"></div>
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);"></div>
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);"></div>
+          <div style="width:12px;height:12px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);"></div>
+          <div style="width:12px;height:12px;border-radius:50%;background:#FFD700;box-shadow:0 0 14px #FFD700;"></div>
+        </div>
+        <div style="text-align:center;font-weight:800;color:#FFD700;font-size:1.05rem;letter-spacing:0.06em;">
+          ⚡ STREAK CLEAR (+250 PTS + BOARD WIPE)
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Combos & Multipliers -->
+    <div class="tut-step-pane" data-step="3">
+      <div class="tut-step-header">
+        <div class="tut-step-icon">⚡</div>
+        <div>
+          <div class="tut-step-title">Multi-Clear Combos</div>
+          <div style="font-size:0.8rem;color:#A78BFA;font-weight:700;">×1.5 &amp; ×2 Score Multipliers</div>
+        </div>
+      </div>
+      <p class="tut-step-body">
+        A single smart clue can clear multiple words simultaneously. For example, clue <strong>"water"</strong> matches both <strong>"ocean"</strong> and <strong>"river"</strong>!
+      </p>
+      <div class="tut-visual-box">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;">
+          <div class="tut-chip clue">Clue: "water"</div>
+          <span style="font-size:1.2rem;color:var(--cyan);">➔</span>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <div class="tut-chip target" style="padding:4px 10px;font-size:0.82rem;">🌊 ocean</div>
+            <div class="tut-chip target" style="padding:4px 10px;font-size:0.82rem;">🏞️ river</div>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:0.85rem;color:#A78BFA;font-weight:800;margin-top:4px;">
+          Multi-hit combo triggers: ×1.5 or ×2 Score Multiplier!
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Footer -->
+    <div class="tut-nav-row">
+      <div class="tut-dots" id="tut-dots">
+        <div class="tut-dot active" data-step="0"></div>
+        <div class="tut-dot" data-step="1"></div>
+        <div class="tut-dot" data-step="2"></div>
+        <div class="tut-dot" data-step="3"></div>
+      </div>
+
+      <div class="tut-btns-group">
+        <button class="tut-btn-skip" id="tut-skip-btn">Skip</button>
+        <button class="tut-btn-back" id="tut-prev-btn" disabled>← Back</button>
+        <button class="tut-btn-next" id="tut-next-btn">Next Step →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Game Over Overlay -->
+<div class="game-over-overlay" id="game-over-overlay">
+  <div class="game-over-card">
+    <div class="go-title">GAME OVER</div>
+    <div class="go-subtitle">Arcade Mode</div>
+    <div class="go-team-pill" id="go-team-pill" style="display:none;">
+      <span id="go-team-icon">⚡</span>
+      <span id="go-team-name">Team Alpha</span>
+      <span class="go-rank-badge" id="go-rank-badge">🏆 Rank #1</span>
+    </div>
+    <div class="go-score-big" id="go-score">0</div>
+    <div class="go-best" id="go-best">Best: 0</div>
+    <span class="go-new-best" id="go-new-best" style="display:none;">✨ NEW BEST!</span>
+
+    <div class="go-stats" style="margin-top:16px; margin-bottom:20px;">
+      <div class="go-stat">
+        <div class="go-stat-val" id="go-time">0:00</div>
+        <div class="go-stat-lbl">⏱ Time</div>
+      </div>
+      <div class="go-stat">
+        <div class="go-stat-val" id="go-streaks">0</div>
+        <div class="go-stat-lbl">🔥 Streak</div>
+      </div>
+    </div>
+
+    <div class="go-btns" style="flex-wrap:wrap;">
+      <button class="btn-primary" id="play-again-btn" style="flex: 1 1 100%;">▶ Play Again</button>
+      <button class="btn-secondary" id="go-leaderboard-btn" style="flex:1;">🏆 Leaderboard</button>
+      <button class="btn-secondary" id="go-switch-team-btn" style="flex:1;">👥 Team / Host</button>
+      <a class="btn-secondary" href="tutorial.html" style="flex:1;">📖 Tutorial</a>
+      <a class="btn-secondary" href="index.html" style="flex:1;">🏠 Home</a>
+    </div>
+  </div>
+</div>
+
+<!-- Team Setup & Host Control Lobby Modal -->
+<div class="modal-overlay" id="lobby-modal" role="dialog" aria-modal="true" aria-label="Game Lobby">
+  <div class="lobby-card">
+    <div class="lobby-badge-row">
+      <span class="lobby-tag">⚡ CLUB ARENA</span>
+      <span class="lobby-mode-pill" id="lobby-status-pill">Ready to Match</span>
+    </div>
+
+    <h2 class="lobby-title">WordWave <span>Arcade</span></h2>
+    <p class="lobby-desc">Enter your team name, customize your banner, or activate host controls to start.</p>
+
+    <!-- Tab navigation: Team Mode vs Host Mode -->
+    <div class="lobby-tabs">
+      <button class="lobby-tab active" id="tab-team-btn" type="button">👥 Team Play</button>
+      <button class="lobby-tab" id="tab-host-btn" type="button">👑 Host Controls</button>
+    </div>
+
+    <!-- Team Pane -->
+    <div class="lobby-pane active" id="pane-team">
+      <div class="team-input-group">
+        <label for="team-name-input" class="team-label">TEAM NAME</label>
+        <div class="team-input-wrap">
+          <input type="text" id="team-name-input" class="team-input" placeholder="e.g. Cyber Wolves" maxlength="22" autocomplete="off" spellcheck="false">
+          <button type="button" class="btn-random-name" id="random-name-btn" title="Generate Random Team Name">🎲 Random</button>
+        </div>
+      </div>
+
+      <div class="avatar-select-group">
+        <label class="team-label">TEAM BADGE / AVATAR</label>
+        <div class="avatar-grid" id="avatar-grid">
+          <button type="button" class="avatar-btn active" data-badge="⚡" title="Team 1: Volt Lightning">⚡</button>
+          <button type="button" class="avatar-btn" data-badge="🐺" title="Team 2: Cyber Wolf">🐺</button>
+          <button type="button" class="avatar-btn" data-badge="🚀" title="Team 3: Cosmic Rocket">🚀</button>
+          <button type="button" class="avatar-btn" data-badge="👾" title="Team 4: Pixel Alien">👾</button>
+          <button type="button" class="avatar-btn" data-badge="🔥" title="Team 5: Inferno Flame">🔥</button>
+          <button type="button" class="avatar-btn" data-badge="💎" title="Team 6: Crystal Diamond">💎</button>
+          <button type="button" class="avatar-btn" data-badge="👑" title="Team 7: Royal Crown">👑</button>
+          <button type="button" class="avatar-btn" data-badge="🎯" title="Team 8: Target Sniper">🎯</button>
+          <button type="button" class="avatar-btn" data-badge="🦁" title="Team 9: Golden Lion">🦁</button>
+          <button type="button" class="avatar-btn" data-badge="🤖" title="Team 10: Cyborg Bot">🤖</button>
+          <button type="button" class="avatar-btn" data-badge="🐉" title="Team 11: Mystic Dragon">🐉</button>
+          <button type="button" class="avatar-btn" data-badge="🦅" title="Team 12: Soaring Eagle">🦅</button>
+          <button type="button" class="avatar-btn" data-badge="🦈" title="Team 13: Neon Shark">🦈</button>
+          <button type="button" class="avatar-btn" data-badge="🦊" title="Team 14: Swift Fox">🦊</button>
+          <button type="button" class="avatar-btn" data-badge="🐻" title="Team 15: Iron Bear">🐻</button>
+          <button type="button" class="avatar-btn" data-badge="🐯" title="Team 16: Shadow Tiger">🐯</button>
+          <button type="button" class="avatar-btn" data-badge="🐍" title="Team 17: Cyber Viper">🐍</button>
+          <button type="button" class="avatar-btn" data-badge="⚔️" title="Team 18: Dual Swords">⚔️</button>
+          <button type="button" class="avatar-btn" data-badge="🛡️" title="Team 19: Aegis Shield">🛡️</button>
+          <button type="button" class="avatar-btn" data-badge="🌪️" title="Team 20: Vortex Cyclone">🌪️</button>
+          <button type="button" class="avatar-btn" data-badge="☄️" title="Team 21: Blazing Comet">☄️</button>
+          <button type="button" class="avatar-btn" data-badge="🔮" title="Team 22: Mystic Orb">🔮</button>
+          <button type="button" class="avatar-btn" data-badge="🏆" title="Team 23: Golden Trophy">🏆</button>
+          <button type="button" class="avatar-btn" data-badge="🌌" title="Team 24: Cosmic Galaxy">🌌</button>
+          <button type="button" class="avatar-btn" data-badge="⭐" title="Team 25: Nova Star">⭐</button>
+          <button type="button" class="avatar-btn" data-badge="🏎️" title="Team 26: Turbo Velocity">🏎️</button>
+          <button type="button" class="avatar-btn" data-badge="🥊" title="Team 27: Power Striker">🥊</button>
+          <button type="button" class="avatar-btn" data-badge="🧬" title="Team 28: Quantum Helix">🧬</button>
+          <button type="button" class="avatar-btn" data-badge="⚓" title="Team 29: Anchor Vanguard">⚓</button>
+          <button type="button" class="avatar-btn" data-badge="🛸" title="Team 30: Star Voyager">🛸</button>
+        </div>
+      </div>
+
+      <div class="lobby-actions">
+        <button class="btn-primary lobby-start-btn" id="lobby-start-btn">🚀 START GAME</button>
+        <div class="lobby-sub-actions">
+          <button type="button" class="btn-secondary" id="lobby-view-lb-btn">🏆 Leaderboard</button>
+          <button type="button" class="btn-secondary" id="lobby-view-tut-btn">❓ How to Play</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Host Pane -->
+    <div class="lobby-pane" id="pane-host">
+      <div class="host-status-box">
+        <div class="host-status-header">
+          <span class="host-crown-icon">👑</span>
+          <div>
+            <div class="host-status-title">Host Master Controls</div>
+            <div class="host-status-sub">Control game sessions &amp; manage club scores</div>
+          </div>
+        </div>
+        <p class="host-info-text">
+          As the Host, you can trigger match starts for all teams, view real-time tournament rankings, or reset the leaderboard for a fresh round.
+        </p>
+      </div>
+
+      <div class="host-controls-grid">
+        <button type="button" class="btn-host-action primary" id="host-start-match-btn">
+          <span class="btn-icon">🚀</span>
+          <div>
+            <div class="action-title">START MATCH (3s COUNTDOWN)</div>
+            <div class="action-sub">Trigger high-energy countdown and launch match</div>
+          </div>
+        </button>
+
+        <button type="button" class="btn-host-action" id="host-view-lb-btn">
+          <span class="btn-icon">🏆</span>
+          <div>
+            <div class="action-title">VIEW LIVE LEADERBOARD</div>
+            <div class="action-sub">Check current team rankings and scores</div>
+          </div>
+        </button>
+
+        <button type="button" class="btn-host-action danger" id="host-reset-lb-btn">
+          <span class="btn-icon">🗑️</span>
+          <div>
+            <div class="action-title">RESET LEADERBOARD</div>
+            <div class="action-sub">Clear all team scores for a fresh competition</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Live Club Leaderboard Modal -->
+<div class="modal-overlay" id="leaderboard-modal" role="dialog" aria-modal="true" aria-label="Club Leaderboard">
+  <div class="leaderboard-card">
+    <div class="lb-header">
+      <div class="lb-title-wrap">
+        <span class="lb-trophy">🏆</span>
+        <div>
+          <h2 class="lb-title">CLUB LEADERBOARD</h2>
+          <div class="lb-sub">Top Team Performances in WordWave Arcade</div>
+        </div>
+      </div>
+      <button class="lb-close-btn" id="lb-close-btn" aria-label="Close Leaderboard">✕</button>
+    </div>
+
+    <!-- Leaderboard Table Container -->
+    <div class="lb-table-container">
+      <table class="lb-table">
+        <thead>
+          <tr>
+            <th style="width: 54px;">Rank</th>
+            <th>Team</th>
+            <th style="text-align: right;">Score</th>
+            <th style="text-align: center;">Time</th>
+            <th style="text-align: center;">Streak</th>
+            <th style="text-align: right;">Time</th>
+          </tr>
+        </thead>
+        <tbody id="lb-table-body">
+          <!-- dynamically populated -->
+        </tbody>
+      </table>
+      <div class="lb-empty-state" id="lb-empty-state" style="display:none;">
+        <span style="font-size: 2.5rem;">🎮</span>
+        <p>No team scores recorded yet. Be the first team to enter the arena!</p>
+      </div>
+    </div>
+
+    <div class="lb-footer">
+      <div class="lb-footer-left">
+        <span style="color:var(--muted); font-size: 0.8rem;">⚡ Scores update automatically when teams finish</span>
+      </div>
+      <div class="lb-footer-right">
+        <button type="button" class="btn-secondary" id="lb-clear-btn" style="color:var(--danger); border-color:rgba(239,68,68,0.3); font-size:0.8rem; padding: 6px 12px;">🗑️ Clear Board</button>
+        <button type="button" class="btn-primary" id="lb-done-btn" style="padding: 8px 18px; font-size: 0.88rem;">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Full Screen Countdown Overlay -->
+<div class="countdown-overlay" id="countdown-overlay" aria-hidden="true">
+  <div class="countdown-box">
+    <div class="countdown-team-pill" id="countdown-team-pill">
+      <span id="countdown-team-badge">⚡</span>
+      <span id="countdown-team-name">Team Alpha</span>
+    </div>
+    <div class="countdown-number" id="countdown-number">3</div>
+    <div class="countdown-sub" id="countdown-sub">MATCH STARTING...</div>
+  </div>
+</div>
+
+<script type="module">
+  import { semanticEngine } from './js/semantic.js';
+  import { ArcadeGame }     from './js/arcade.js';
+  import { audio }          from './js/audio.js';
+  import { getActiveTeam, setActiveTeam, getLeaderboard, clearLeaderboard } from './js/storage.js';
+
+  const bar      = document.getElementById('load-bar');
+  const status   = document.getElementById('load-status');
+  const loadScr  = document.getElementById('loading-screen');
+  const gameWrap = document.getElementById('game-wrap');
+  const soundBtn = document.getElementById('sound-btn');
+
+  // Sound toggle button in HUD
+  const updateSoundUI = () => {
+    soundBtn.textContent = audio.enabled ? '🔊' : '🔇';
+    soundBtn.setAttribute('title', audio.enabled ? 'Mute Sound' : 'Unmute Sound');
+  };
+  updateSoundUI();
+  soundBtn.addEventListener('click', () => {
+    audio.toggle();
+    updateSoundUI();
+  });
+
+  // Enable audio context on any user touch/click/key
+  const unlockAudio = () => {
+    if (audio.enabled) audio._resume();
+    window.removeEventListener('pointerdown', unlockAudio);
+    window.removeEventListener('keydown', unlockAudio);
+  };
+  window.addEventListener('pointerdown', unlockAudio, { once: true });
+  window.addEventListener('keydown', unlockAudio, { once: true });
+
+  const FACTS = [
+    "Type any related word — the AI understands context and synonyms!",
+    "Build a 5-hit streak to trigger a board-clearing STREAK CLEAR!",
+    "High semantic similarity earns a 'Perfect Hit' bonus!",
+    "Clearing the top TARGET word keeps you safe from the ceiling.",
+    "Chain multiple clears with a single clue for combo multipliers!",
+  ];
+  let fi = 0;
+  const ft = setInterval(() => {
+    fi = (fi + 1) % FACTS.length;
+    const el = document.getElementById('load-fact');
+    el.style.opacity = 0;
+    setTimeout(() => { el.textContent = FACTS[fi]; el.style.opacity = 1; }, 300);
+  }, 3200);
+
+  // Load model (uses browser cache after first visit)
+  let loaded = false;
+  try {
+    await semanticEngine.init(({ status: s, progress: p }) => {
+      if (typeof p === 'number' && p >= 0) bar.style.width = `${Math.round(Math.min(100, p))}%`;
+      if (s === 'downloading') status.textContent = `Downloading AI model… ${Math.round(p || 0)}%`;
+      else if (s === 'initiate') status.textContent = 'Initializing neural network…';
+      else if (s === 'ready' || s === 'done') {
+        bar.style.width = '100%';
+        status.textContent = '✅ AI Engine Ready!';
+      }
+    });
+    loaded = true;
+  } catch(e) {
+    status.innerHTML = `⚠️ Failed to load AI model.<div class="load-error-actions"><button class="btn-primary" id="retry-btn" style="margin-top:14px;padding:8px 18px;font-size:0.85rem;flex:none;">🔄 Retry</button></div>`;
+    document.getElementById('retry-btn').addEventListener('click', () => location.reload());
+    console.error('[WordWave] Model initialization error:', e);
+  }
+
+  // ─── Team & Host Setup Controller (30 Distinct Teams & Logos) ──
+  const TEAM_PRESETS = [
+    { name: 'Volt Strikers',     badge: '⚡' },
+    { name: 'Cyber Wolves',      badge: '🐺' },
+    { name: 'Cosmic Rockets',    badge: '🚀' },
+    { name: 'Pixel Aliens',      badge: '👾' },
+    { name: 'Inferno Flames',    badge: '🔥' },
+    { name: 'Crystal Diamonds',  badge: '💎' },
+    { name: 'Royal Crowns',      badge: '👑' },
+    { name: 'Target Snipers',    badge: '🎯' },
+    { name: 'Golden Lions',      badge: '🦁' },
+    { name: 'Cyborg Titans',     badge: '🤖' },
+    { name: 'Mystic Dragons',    badge: '🐉' },
+    { name: 'Soaring Eagles',    badge: '🦅' },
+    { name: 'Neon Sharks',       badge: '🦈' },
+    { name: 'Swift Foxes',       badge: '🦊' },
+    { name: 'Iron Bears',        badge: '🐻' },
+    { name: 'Shadow Tigers',     badge: '🐯' },
+    { name: 'Cyber Vipers',      badge: '🐍' },
+    { name: 'Dual Swords',       badge: '⚔️' },
+    { name: 'Aegis Shields',     badge: '🛡️' },
+    { name: 'Vortex Cyclones',   badge: '🌪️' },
+    { name: 'Blazing Comets',    badge: '☄️' },
+    { name: 'Mystic Orbs',       badge: '🔮' },
+    { name: 'Golden Trophies',   badge: '🏆' },
+    { name: 'Cosmic Galaxies',   badge: '🌌' },
+    { name: 'Nova Stars',        badge: '⭐' },
+    { name: 'Turbo Velocity',    badge: '🏎️' },
+    { name: 'Power Strikers',    badge: '🥊' },
+    { name: 'Quantum Helix',     badge: '🧬' },
+    { name: 'Anchor Vanguards',  badge: '⚓' },
+    { name: 'Star Voyagers',     badge: '🛸' }
+  ];
+
+  let selectedBadge = '⚡';
+  const lobbyModal        = document.getElementById('lobby-modal');
+  const teamNameInput     = document.getElementById('team-name-input');
+  const randomNameBtn     = document.getElementById('random-name-btn');
+  const avatarGrid        = document.getElementById('avatar-grid');
+  const tabTeamBtn        = document.getElementById('tab-team-btn');
+  const tabHostBtn        = document.getElementById('tab-host-btn');
+  const paneTeam          = document.getElementById('pane-team');
+  const paneHost          = document.getElementById('pane-host');
+  const lobbyStartBtn     = document.getElementById('lobby-start-btn');
+  const lobbyViewLbBtn    = document.getElementById('lobby-view-lb-btn');
+  const lobbyViewTutBtn   = document.getElementById('lobby-view-tut-btn');
+  const hostStartMatchBtn = document.getElementById('host-start-match-btn');
+  const hostViewLbBtn     = document.getElementById('host-view-lb-btn');
+  const hostResetLbBtn    = document.getElementById('host-reset-lb-btn');
+
+  const hudTeamDisplay    = document.getElementById('hud-team-display');
+  const hudTeamBadge      = document.getElementById('hud-team-badge');
+  const hudTeamName       = document.getElementById('hud-team-name');
+  const hostBtn           = document.getElementById('host-btn');
+  const leaderboardBtn    = document.getElementById('leaderboard-btn');
+
+  // Leaderboard Elements
+  const leaderboardModal  = document.getElementById('leaderboard-modal');
+  const lbCloseBtn        = document.getElementById('lb-close-btn');
+  const lbDoneBtn         = document.getElementById('lb-done-btn');
+  const lbClearBtn        = document.getElementById('lb-clear-btn');
+  const lbTableBody       = document.getElementById('lb-table-body');
+  const lbEmptyState      = document.getElementById('lb-empty-state');
+
+  // Countdown Elements
+  const countdownOverlay   = document.getElementById('countdown-overlay');
+  const countdownNumber    = document.getElementById('countdown-number');
+  const countdownTeamBadge = document.getElementById('countdown-team-badge');
+  const countdownTeamName  = document.getElementById('countdown-team-name');
+
+  function refreshTeamUI() {
+    const team = getActiveTeam();
+    selectedBadge = team.badge || '⚡';
+    if (teamNameInput) teamNameInput.value = team.name || 'Team Alpha';
+    if (hudTeamBadge) hudTeamBadge.textContent = selectedBadge;
+    if (hudTeamName) hudTeamName.textContent = team.name || 'Team Alpha';
+    if (avatarGrid) {
+      avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-badge') === selectedBadge);
+      });
+    }
+  }
+
+  refreshTeamUI();
+
+  // Random Team Preset Picker (picks name + selects matching logo!)
+  randomNameBtn.addEventListener('click', () => {
+    const pick = TEAM_PRESETS[Math.floor(Math.random() * TEAM_PRESETS.length)];
+    teamNameInput.value = pick.name;
+    selectedBadge = pick.badge;
+    if (avatarGrid) {
+      avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-badge') === selectedBadge);
+      });
+      const activeBtn = avatarGrid.querySelector('.avatar-btn.active');
+      if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+    teamNameInput.focus();
+  });
+
+  // Avatar Selection
+  avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      avatarGrid.querySelectorAll('.avatar-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedBadge = btn.getAttribute('data-badge') || '⚡';
+    });
+  });
+
+  // Lobby Tab Switching (Team vs Host)
+  function setLobbyTab(tab) {
+    if (tab === 'team') {
+      tabTeamBtn.classList.add('active');
+      tabHostBtn.classList.remove('active');
+      paneTeam.classList.add('active');
+      paneHost.classList.remove('active');
+    } else {
+      tabHostBtn.classList.add('active');
+      tabTeamBtn.classList.remove('active');
+      paneHost.classList.add('active');
+      paneTeam.classList.remove('active');
+    }
+  }
+
+  tabTeamBtn.addEventListener('click', () => setLobbyTab('team'));
+  tabHostBtn.addEventListener('click', () => setLobbyTab('host'));
+
+  function openLobby(tab = 'team') {
+    refreshTeamUI();
+    setLobbyTab(tab);
+    lobbyModal.classList.add('visible');
+    if (game) game.pause();
+  }
+
+  function closeLobby() {
+    lobbyModal.classList.remove('visible');
+  }
+
+  hudTeamDisplay.addEventListener('click', () => openLobby('team'));
+  hostBtn.addEventListener('click', () => openLobby('host'));
+  leaderboardBtn.addEventListener('click', () => openLeaderboard());
+
+  function saveCurrentTeam() {
+    const name = (teamNameInput.value.trim() || 'Team Alpha');
+    const team = setActiveTeam(name, selectedBadge);
+    refreshTeamUI();
+    return team;
+  }
+
+  // ─── Match Countdown & Launch ─────────────────────────
+  let isCountingDown = false;
+  function startMatchSequence(withCountdown = true) {
+    const team = saveCurrentTeam();
+    closeLobby();
+    closeTutorial();
+    closeLeaderboard();
+
+    if (!withCountdown) {
+      startGame();
+      return;
+    }
+
+    isCountingDown = true;
+    countdownTeamBadge.textContent = team.badge;
+    countdownTeamName.textContent  = team.name;
+    countdownOverlay.classList.add('active');
+
+    let count = 3;
+    countdownNumber.textContent = count;
+    audio.countdown(false);
+
+    const timer = setInterval(() => {
+      count--;
+      if (count > 0) {
+        countdownNumber.textContent = count;
+        audio.countdown(false);
+      } else if (count === 0) {
+        countdownNumber.textContent = 'START! ⚡';
+        audio.countdown(true);
+      } else {
+        clearInterval(timer);
+        countdownOverlay.classList.remove('active');
+        isCountingDown = false;
+        startGame();
+      }
+    }, 850);
+  }
+
+  lobbyStartBtn.addEventListener('click', () => startMatchSequence(true));
+  hostStartMatchBtn.addEventListener('click', () => startMatchSequence(true));
+
+  // ─── Leaderboard Controller ───────────────────────────
+  function renderLeaderboard() {
+    const list = getLeaderboard();
+    lbTableBody.innerHTML = '';
+    if (!list || list.length === 0) {
+      lbEmptyState.style.display = 'flex';
+      return;
+    }
+    lbEmptyState.style.display = 'none';
+
+    list.forEach((item, idx) => {
+      const tr = document.createElement('tr');
+      const rankNum = idx + 1;
+      let rankHtml = `<span class="rank-badge">${rankNum}</span>`;
+      if (rankNum === 1) rankHtml = `<span class="rank-badge rank-1">🥇 1</span>`;
+      else if (rankNum === 2) rankHtml = `<span class="rank-badge rank-2">🥈 2</span>`;
+      else if (rankNum === 3) rankHtml = `<span class="rank-badge rank-3">🥉 3</span>`;
+
+      const m = Math.floor((item.time || 0) / 60).toString().padStart(2, '0');
+      const s = ((item.time || 0) % 60).toString().padStart(2, '0');
+
+      tr.innerHTML = `
+        <td>${rankHtml}</td>
+        <td>
+          <div class="lb-team-col">
+            <span style="font-size:1.15rem;">${item.badge || '⚡'}</span>
+            <span>${item.teamName || 'Team Alpha'}</span>
+          </div>
+        </td>
+        <td style="text-align: right;" class="lb-score-col">${(item.score || 0).toLocaleString()}</td>
+        <td style="text-align: center; color: var(--muted);">${m}:${s}</td>
+        <td style="text-align: center; font-weight:700; color: #FFD700;">🔥 ${item.maxStreak || 0}</td>
+        <td style="text-align: right; color: var(--muted); font-size: 0.78rem;">${item.date || 'Earlier'}</td>
+      `;
+      lbTableBody.appendChild(tr);
+    });
+  }
+
+  function openLeaderboard() {
+    renderLeaderboard();
+    leaderboardModal.classList.add('visible');
+    if (game) game.pause();
+  }
+
+  function closeLeaderboard() {
+    leaderboardModal.classList.remove('visible');
+    if (game && !isCountingDown && !lobbyModal.classList.contains('visible') && !tutOverlay.classList.contains('visible')) {
+      game.resume();
+    }
+  }
+
+  lbCloseBtn.addEventListener('click', closeLeaderboard);
+  lbDoneBtn.addEventListener('click', closeLeaderboard);
+  lobbyViewLbBtn.addEventListener('click', openLeaderboard);
+  hostViewLbBtn.addEventListener('click', openLeaderboard);
+
+  lbClearBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to reset the club leaderboard for a new tournament?')) {
+      clearLeaderboard();
+      renderLeaderboard();
+    }
+  });
+
+  hostResetLbBtn.addEventListener('click', () => {
+    if (confirm('Host Action: Reset all team scores on the leaderboard?')) {
+      clearLeaderboard();
+      renderLeaderboard();
+      alert('Leaderboard reset successfully for the new competition round!');
+    }
+  });
+
+  lobbyViewTutBtn.addEventListener('click', () => {
+    closeLobby();
+    openTutorial(false);
+  });
+
+  // Game over overlay button handlers
+  const goLeaderboardBtn = document.getElementById('go-leaderboard-btn');
+  if (goLeaderboardBtn) {
+    goLeaderboardBtn.addEventListener('click', openLeaderboard);
+  }
+  const goSwitchTeamBtn = document.getElementById('go-switch-team-btn');
+  if (goSwitchTeamBtn) {
+    goSwitchTeamBtn.addEventListener('click', () => {
+      document.getElementById('game-over-overlay').classList.remove('visible');
+      openLobby('team');
+    });
+  }
+
+  // ─── Step-by-Step Tutorial Controller ──────────────────
+  let tutStep = 0;
+  const totalSteps = 4;
+  const tutOverlay = document.getElementById('tutorial-overlay');
+  const tutCounter = document.getElementById('tut-step-counter');
+  const tutPanes   = document.querySelectorAll('.tut-step-pane');
+  const tutDots    = document.querySelectorAll('.tut-dot');
+  const tutPrevBtn = document.getElementById('tut-prev-btn');
+  const tutNextBtn = document.getElementById('tut-next-btn');
+  const tutSkipBtn = document.getElementById('tut-skip-btn');
+  let isInitialTutorial = false;
+
+  function renderTutStep() {
+    tutPanes.forEach((pane, idx) => {
+      pane.classList.toggle('active', idx === tutStep);
+    });
+    tutDots.forEach((dot, idx) => {
+      dot.classList.toggle('active', idx === tutStep);
+    });
+    tutCounter.textContent = `Step ${tutStep + 1} of ${totalSteps}`;
+    tutPrevBtn.disabled = (tutStep === 0);
+
+    if (tutStep === totalSteps - 1) {
+      tutNextBtn.textContent = 'Enter Lobby ⚡';
+    } else {
+      tutNextBtn.textContent = 'Next Step →';
+    }
+  }
+
+  function openTutorial(firstTime = false) {
+    isInitialTutorial = firstTime;
+    tutStep = 0;
+    renderTutStep();
+    tutOverlay.classList.add('visible');
+    if (!firstTime && game) {
+      game.pause();
+    }
+  }
+
+  function closeTutorial() {
+    tutOverlay.classList.remove('visible');
+    if (isInitialTutorial) {
+      isInitialTutorial = false;
+      openLobby('team');
+    } else if (game && !lobbyModal.classList.contains('visible') && !leaderboardModal.classList.contains('visible')) {
+      game.resume();
+    }
+  }
+
+  tutNextBtn.addEventListener('click', () => {
+    if (tutStep < totalSteps - 1) {
+      tutStep++;
+      renderTutStep();
+    } else {
+      closeTutorial();
+    }
+  });
+
+  tutPrevBtn.addEventListener('click', () => {
+    if (tutStep > 0) {
+      tutStep--;
+      renderTutStep();
+    }
+  });
+
+  tutSkipBtn.addEventListener('click', closeTutorial);
+
+  tutDots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      const s = parseInt(dot.getAttribute('data-step'), 10);
+      if (!isNaN(s)) {
+        tutStep = s;
+        renderTutStep();
+      }
+    });
+  });
+
+  // Help button in HUD
+  document.getElementById('help-btn').addEventListener('click', () => {
+    openTutorial(false);
+  });
+
+  // Model ready initialization
+  if (loaded) {
+    clearInterval(ft);
+    bar.style.width = '100%';
+    status.textContent = '✅ AI Ready!';
+
+    await new Promise(r => setTimeout(r, 450));
+    loadScr.classList.add('fade-out');
+    setTimeout(() => {
+      loadScr.style.display = 'none';
+      gameWrap.style.display = 'flex';
+      // Open the Lobby so team can set name or host can control!
+      openLobby('team');
+    }, 600);
+  }
+
+  let game = null;
+
+  function startGame() {
+    if (game) {
+      game.destroy();
+      game = null;
+    }
+    game = new ArcadeGame();
+    game.start();
+  }
+
+  // Play again handler
+  document.getElementById('play-again-btn').addEventListener('click', () => {
+    document.getElementById('game-over-overlay').classList.remove('visible');
+    if (game) {
+      game.destroy();
+      game = null;
+    }
+    // Clean DOM elements
+    const stack = document.getElementById('word-stack');
+    stack.innerHTML = '';
+    stack.style.transform = 'translateY(0)';
+    document.getElementById('score-display').textContent = '0';
+    document.getElementById('timer-display').textContent = '00:00';
+    document.getElementById('streak-dots').innerHTML = '';
+    document.getElementById('combo-badge').classList.remove('show');
+    document.getElementById('streak-banner').classList.remove('fire');
+    document.getElementById('sim-indicator').classList.remove('show');
+    document.getElementById('danger-line').classList.remove('active');
+    document.getElementById('feedback-text').textContent = '';
+
+    startMatchSequence(true);
+  });
+</script>
+
+</body>
+</html>
