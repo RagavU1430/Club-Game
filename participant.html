@@ -1809,37 +1809,6 @@
       });
     }
 
-    // Team name keyboard listener (Enter to start)
-    if (teamNameInput) {
-      teamNameInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          triggerMatchStart();
-        }
-      });
-      teamNameInput.addEventListener('input', () => {
-        hideTeamError();
-      });
-    }
-
-    // Go next round button on Game Over card
-    const goNextTeamBtn = document.getElementById('go-next-team-btn');
-    if (goNextTeamBtn) {
-      goNextTeamBtn.addEventListener('click', () => {
-        const goOverlay = document.getElementById('game-over-overlay');
-        if (goOverlay) goOverlay.classList.remove('active', 'visible');
-        refreshTeamUI();
-        lobbyModal.style.display = 'flex';
-        setTimeout(() => {
-          if (teamNameInput) {
-            teamNameInput.value = '';
-            hideTeamError();
-            teamNameInput.focus();
-          }
-        }, 80);
-      });
-    }
-
     // Initial finish loading
     if (loaded) {
       clearInterval(ft);
@@ -1847,8 +1816,6 @@
       loadScr.style.transition = 'opacity 0.4s';
       setTimeout(() => {
         loadScr.style.display = 'none';
-        lobbyModal.style.display = 'flex';
-        if (teamNameInput) teamNameInput.focus();
       }, 400);
     }
   </script>
