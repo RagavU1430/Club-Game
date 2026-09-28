@@ -85,6 +85,28 @@
       display: flex;
     }
 
+    /* ─── Participant Lobby Modal Visibility & Esports Backdrop ─── */
+    #lobby-modal {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 1100 !important;
+      background: radial-gradient(circle at 50% 35%, rgba(14, 20, 48, 0.98) 0%, rgba(6, 8, 18, 0.99) 100%) !important;
+      backdrop-filter: blur(28px) !important;
+      -webkit-backdrop-filter: blur(28px) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 16px !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+    #lobby-modal.hidden {
+      display: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
     /* ─── Waiting For Host State ────────────────────────── */
     .waiting-host-card {
       display: flex;
@@ -93,6 +115,34 @@
       text-align: center;
       gap: 18px;
       width: 100%;
+    }
+    .radar-spinner {
+      position: absolute;
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      border-top-color: var(--cyan);
+      border-right-color: rgba(0, 212, 255, 0.4);
+      animation: load-spin 1.2s linear infinite;
+    }
+    .lobby-loading-dots {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .lobby-loading-dots span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan);
+      animation: dots-bounce 1.4s infinite ease-in-out both;
+    }
+    .lobby-loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .lobby-loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes dots-bounce {
+      0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
+      40% { transform: scale(1); opacity: 1; }
     }
     .waiting-team-banner {
       display: flex;
@@ -1111,11 +1161,15 @@
             <div class="radar-ring"></div>
             <div class="radar-ring"></div>
             <div class="radar-ring"></div>
+            <div class="radar-spinner"></div>
             <div class="radar-icon">📡</div>
           </div>
           <div class="radar-status-title">WAITING FOR HOST TO START THE GAME</div>
           <div class="radar-status-sub" id="host-connection-sub">
-            The host will start the game. Stand by — your match countdown will start automatically when the host clicks start!
+            Your team is locked in and ready. Stand by — match countdown will automatically launch when the Host starts the game!
+          </div>
+          <div class="lobby-loading-dots">
+            <span></span><span></span><span></span>
           </div>
         </div>
 
@@ -1448,7 +1502,10 @@
     function showSetupView() {
       if (teamSetupView) teamSetupView.style.display = 'block';
       if (waitingHostView) waitingHostView.style.display = 'none';
-      if (lobbyModal) lobbyModal.style.display = 'flex';
+      if (lobbyModal) {
+        lobbyModal.classList.remove('hidden');
+        lobbyModal.style.display = 'flex';
+      }
       hideTeamError();
 
       const team = getActiveTeam();
@@ -1472,7 +1529,10 @@
       }
       if (teamSetupView) teamSetupView.style.display = 'none';
       if (waitingHostView) waitingHostView.style.display = 'block';
-      if (lobbyModal) lobbyModal.style.display = 'flex';
+      if (lobbyModal) {
+        lobbyModal.classList.remove('hidden');
+        lobbyModal.style.display = 'flex';
+      }
 
       if (waitingTeamName) waitingTeamName.textContent = active.name;
       if (waitingTeamBadge) waitingTeamBadge.textContent = active.badge || '⚡';
@@ -1574,7 +1634,10 @@
       // Mark team as PLAYING in host lobby
       updateLobbyTeamStatus(team.name, 'PLAYING');
 
-      if (lobbyModal) lobbyModal.style.display = 'none';
+      if (lobbyModal) {
+        lobbyModal.classList.add('hidden');
+        lobbyModal.style.display = 'none';
+      }
       const gameOverEl = document.getElementById('game-over-overlay');
       if (gameOverEl) gameOverEl.classList.remove('active', 'visible');
 
@@ -1699,6 +1762,8 @@
       if (state.status === 'LOBBY') {
         const gameOverEl = document.getElementById('game-over-overlay');
         if (gameOverEl) gameOverEl.classList.remove('active', 'visible');
+        if (countdownOverlay) countdownOverlay.classList.remove('active');
+        isLaunching = false;
         if (game) {
           game.destroy();
           game = null;
