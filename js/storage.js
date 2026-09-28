@@ -164,11 +164,16 @@ export function exportLeaderboardCSV() {
 /* ─── Admin Authentication ────────────────────────────── */
 const ADMIN_PASS_KEY    = 'wordwave_admin_password';
 const ADMIN_SESSION_KEY = 'wordwave_admin_session';
-const DEFAULT_ADMIN_PASS = 'admin123';
+const DEFAULT_ADMIN_PASS = 'RagavDeepika1430@';
 
 export function getAdminPassword() {
   try {
-    return localStorage.getItem(ADMIN_PASS_KEY) || DEFAULT_ADMIN_PASS;
+    const saved = localStorage.getItem(ADMIN_PASS_KEY);
+    if (!saved || saved === 'admin123') {
+      localStorage.setItem(ADMIN_PASS_KEY, DEFAULT_ADMIN_PASS);
+      return DEFAULT_ADMIN_PASS;
+    }
+    return saved;
   } catch {
     return DEFAULT_ADMIN_PASS;
   }

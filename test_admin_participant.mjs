@@ -31,10 +31,10 @@ globalThis.sessionStorage = {
 console.log('Testing Default Admin Password...');
 const defaultPass = getAdminPassword();
 console.log('Default Pass:', defaultPass);
-if (defaultPass !== 'admin123') throw new Error('Expected admin123');
+if (defaultPass !== 'RagavDeepika1430@') throw new Error('Expected RagavDeepika1430@');
 
 console.log('Testing Password Verification...');
-if (!verifyAdminPassword('admin123')) throw new Error('Default password should verify');
+if (!verifyAdminPassword('RagavDeepika1430@')) throw new Error('Default password should verify');
 if (verifyAdminPassword('wrongpass')) throw new Error('Wrong password should fail');
 
 console.log('Testing Admin Session...');
