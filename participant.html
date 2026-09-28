@@ -814,6 +814,84 @@
       overflow: hidden;
       z-index: 1;
     }
+
+    /* ─── Mandatory Briefing & Tutorial Modal ─── */
+    #tutorial-modal {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 1400 !important;
+      background: radial-gradient(circle at 50% 35%, rgba(14, 20, 48, 0.98) 0%, rgba(6, 8, 18, 0.99) 100%) !important;
+      backdrop-filter: blur(28px) !important;
+      -webkit-backdrop-filter: blur(28px) !important;
+      display: none;
+      align-items: center !important;
+      justify-content: center !important;
+      padding: 16px !important;
+    }
+    #tutorial-modal.visible {
+      display: flex !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+    .tutorial-card {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(0, 212, 255, 0.4);
+      border-radius: 24px;
+      padding: 26px 30px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.85), 0 0 45px rgba(0, 212, 255, 0.22);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      position: relative;
+      overflow: hidden;
+      animation: modal-pop 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .tut-progress-bar {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+    .tut-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--cyan), var(--purple));
+      width: 33.3%;
+      transition: width 0.3s ease;
+    }
+    .tut-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .tut-badge {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      background: rgba(0, 212, 255, 0.14);
+      padding: 5px 14px;
+      border-radius: 100px;
+      border: 1px solid rgba(0, 212, 255, 0.3);
+    }
+    .tut-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 1.3rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 8px;
+      transition: all 0.2s;
+      line-height: 1;
+    }
+    .tut-close-btn:hover {
+      color: #FFFFFF;
+      background: rgba(255, 255, 255, 0.1);
+    }
   </style>
 </head>
 <body class="arcade-body">
@@ -854,7 +932,6 @@
           <span class="hud-label">Time</span>
           <span class="hud-val" id="time-display">0:00</span>
         </div>
-        <button class="hud-icon-btn" id="leaderboard-btn" title="View Tournament Leaderboard">🏆</button>
         <button class="hud-icon-btn" id="tutorial-btn" title="How to Play Tutorial">❓</button>
         <button class="hud-icon-btn" id="audio-toggle" title="Toggle Sound">🔊</button>
       </div>
@@ -1126,11 +1203,7 @@
         </div>
 
         <div class="lobby-actions">
-          <button class="btn-primary lobby-start-btn" id="lobby-start-btn">✅ CONFIRM TEAM & WAIT FOR HOST</button>
-          <div class="lobby-sub-actions">
-            <button type="button" class="btn-secondary" id="lobby-view-lb-btn">🏆 View Leaderboard</button>
-            <button type="button" class="btn-secondary" id="lobby-view-tut-btn">❓ How to Play</button>
-          </div>
+          <button class="btn-primary lobby-start-btn" id="lobby-start-btn">✅ CONFIRM TEAM & START BRIEFING →</button>
         </div>
       </div>
 
@@ -1184,9 +1257,10 @@
           </div>
         </div>
 
-        <div class="lobby-sub-actions" style="margin-top:10px; width:100%;">
-          <button type="button" class="btn-secondary" id="waiting-view-lb-btn" style="flex:1;">🏆 Leaderboard</button>
-          <button type="button" class="btn-secondary" id="waiting-view-tut-btn" style="flex:1;">❓ Tutorial</button>
+        <div style="margin-top:14px; width:100%;">
+          <button type="button" class="btn-secondary" id="waiting-view-tut-btn" style="width:100%; padding:10px 16px; font-weight:700; border-radius:12px; background:rgba(255,255,255,0.06); font-size:0.9rem; border:1px solid rgba(255,255,255,0.12);">
+            📖 Review Game Rules / Tutorial
+          </button>
         </div>
       </div>
 
@@ -1279,7 +1353,7 @@
     <div class="tutorial-card">
       <div class="tut-progress-bar"><div class="tut-progress-fill" id="tut-progress-fill"></div></div>
       <div class="tut-header">
-        <div class="tut-badge">QUICK TRAINING</div>
+        <div class="tut-badge" id="tut-badge-label">MANDATORY TRAINING (STEP 1 OF 3)</div>
         <button class="tut-close-btn" id="tut-close-btn" title="Close Tutorial">✕</button>
       </div>
 
@@ -1287,35 +1361,35 @@
         <div class="tut-step-header">
           <div class="tut-step-icon">🧠</div>
           <div>
-            <div class="tut-step-title">Semantic Clues</div>
-            <div style="font-size:0.8rem;color:var(--cyan);font-weight:700;">Meaning, Not Spelling</div>
+            <div class="tut-step-title">1. Semantic Meaning</div>
+            <div style="font-size:0.8rem;color:var(--cyan);font-weight:700;">Type Clues, Not Exact Spellings</div>
           </div>
         </div>
         <p class="tut-step-body">
-          Type any word related to words in the stack. The AI calculates conceptual closeness — it understands <strong>synonyms, concepts, and meaning</strong>!
+          Type any word related to words in the stack. Our AI calculates conceptual distance — it understands <strong>synonyms, themes, and meaning</strong>!
         </p>
         <div class="tut-visual-box">
           <div class="tut-match-preview">
-            <div class="tut-chip clue">Clue: "whisker"</div>
+            <div class="tut-chip clue">Your Clue: "whisker"</div>
             <div style="font-size:1.2rem;color:var(--cyan);">➔</div>
-            <div class="tut-chip target">Word: "cat"</div>
+            <div class="tut-chip target">Stack Target: "cat"</div>
           </div>
-          <div style="font-size:0.78rem;color:var(--warn);text-align:center;font-weight:600;">
-            ⚠️ Golden Rule: Never type the word itself — give a related clue!
+          <div style="font-size:0.8rem;color:var(--warn);text-align:center;font-weight:700;">
+            ⚠️ Rule: Never type the word itself — give a related clue to eliminate it!
           </div>
         </div>
       </div>
 
       <div class="tut-step-pane" data-step="1">
         <div class="tut-step-header">
-          <div class="tut-step-icon">📈</div>
+          <div class="tut-step-icon">🎯</div>
           <div>
-            <div class="tut-step-title">Rising Stack &amp; Target</div>
-            <div style="font-size:0.8rem;color:var(--danger);font-weight:700;">Prevent Ceiling Overflow</div>
+            <div class="tut-step-title">2. Top Target Bonus</div>
+            <div style="font-size:0.8rem;color:var(--danger);font-weight:700;">Protect The Danger Line</div>
           </div>
         </div>
         <p class="tut-step-body">
-          New words crawl upward toward the red danger ceiling line. If words reach the top ceiling, it's <strong>Game Over</strong>!
+          New words crawl upward toward the red danger ceiling line. Eliminating the highlighted <strong>TOP TARGET</strong> awards a <strong>+40 Score Bonus</strong>! Don't let words overflow!
         </p>
       </div>
 
@@ -1323,12 +1397,12 @@
         <div class="tut-step-header">
           <div class="tut-step-icon">🔥</div>
           <div>
-            <div class="tut-step-title">5-Hit Streak Clear</div>
-            <div style="font-size:0.8rem;color:#FFD700;font-weight:700;">Full Board Shockwave</div>
+            <div class="tut-step-title">3. 5-Hit Streak Board Wipe</div>
+            <div style="font-size:0.8rem;color:#FFD700;font-weight:700;">Full Arena Shockwave</div>
           </div>
         </div>
         <p class="tut-step-body">
-          Chain <strong>5 successful hits</strong> without a miss to trigger a screen-wiping <strong>STREAK CLEAR</strong> shockwave!
+          Chain <strong>5 correct hits</strong> in a row without a miss to trigger a massive <strong>STREAK CLEAR</strong> that detonates and clears words from the board!
         </p>
       </div>
 
@@ -1339,7 +1413,7 @@
           <div class="tut-dot" data-step="2"></div>
         </div>
         <div class="tut-btns-group">
-          <button class="tut-btn-skip" id="tut-skip-btn">Skip</button>
+          <button class="tut-btn-skip" id="tut-skip-btn" style="display:none;">Skip</button>
           <button class="tut-btn-back" id="tut-prev-btn" disabled>← Back</button>
           <button class="tut-btn-next" id="tut-next-btn">Next Step →</button>
         </div>
@@ -1580,7 +1654,92 @@
       });
     }
 
-    // Confirm Team and enter Waiting for Host state
+    // ─── Interactive Tutorial Controls ────────────────────
+    const tutorialModal  = document.getElementById('tutorial-modal');
+    const tutCloseBtn    = document.getElementById('tut-close-btn');
+    const tutSkipBtn     = document.getElementById('tut-skip-btn');
+    const tutPrevBtn     = document.getElementById('tut-prev-btn');
+    const tutNextBtn     = document.getElementById('tut-next-btn');
+    const tutDots        = document.getElementById('tut-dots');
+    const tutProgress    = document.getElementById('tut-progress-fill');
+    const tutPanes       = tutorialModal ? tutorialModal.querySelectorAll('.tut-step-pane') : [];
+    let tutCurrentStep   = 0;
+    const TUT_TOTAL      = tutPanes.length || 3;
+    let pendingTeam      = null;
+    let isMandatoryTutorial = false;
+
+    function renderTutStep(step) {
+      tutCurrentStep = Math.max(0, Math.min(step, TUT_TOTAL - 1));
+      if (tutPanes) tutPanes.forEach((pane, i) => pane.classList.toggle('active', i === tutCurrentStep));
+      if (tutDots) tutDots.querySelectorAll('.tut-dot').forEach((dot, i) => dot.classList.toggle('active', i === tutCurrentStep));
+      if (tutProgress) tutProgress.style.width = `${((tutCurrentStep + 1) / TUT_TOTAL) * 100}%`;
+      if (tutPrevBtn) tutPrevBtn.disabled = tutCurrentStep === 0;
+
+      const badgeEl = document.getElementById('tut-badge-label');
+      if (badgeEl) {
+        badgeEl.textContent = isMandatoryTutorial 
+          ? `MANDATORY TRAINING (STEP ${tutCurrentStep + 1} OF ${TUT_TOTAL})` 
+          : `GAME BRIEFING (STEP ${tutCurrentStep + 1} OF ${TUT_TOTAL})`;
+      }
+
+      if (tutNextBtn) {
+        if (tutCurrentStep === TUT_TOTAL - 1) {
+          tutNextBtn.textContent = isMandatoryTutorial ? 'ENTER WAITING ROOM 🚀' : 'Close Tutorial 🚀';
+          tutNextBtn.style.background = 'linear-gradient(135deg, #10B981, #00D4FF)';
+          tutNextBtn.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.45)';
+        } else {
+          tutNextBtn.textContent = 'Next Step →';
+          tutNextBtn.style.background = 'linear-gradient(135deg, var(--cyan), var(--purple))';
+          tutNextBtn.style.boxShadow = '0 4px 16px rgba(0, 212, 255, 0.3)';
+        }
+      }
+    }
+
+    function openTutorial(mandatory = false, teamData = null) {
+      isMandatoryTutorial = mandatory;
+      if (teamData) pendingTeam = teamData;
+      renderTutStep(0);
+
+      if (tutCloseBtn) tutCloseBtn.style.display = mandatory ? 'none' : 'block';
+      if (tutSkipBtn) tutSkipBtn.style.display = 'none';
+
+      if (tutorialModal) {
+        tutorialModal.classList.add('visible');
+        tutorialModal.style.display = 'flex';
+      }
+    }
+
+    function closeTutorial() {
+      if (tutorialModal) {
+        tutorialModal.classList.remove('visible');
+        tutorialModal.style.display = 'none';
+      }
+      if (isMandatoryTutorial && pendingTeam) {
+        // Register team presence into host lobby roster as WAITING
+        registerLobbyTeam(pendingTeam.name, pendingTeam.badge, 'WAITING');
+        showWaitingView(pendingTeam);
+        isMandatoryTutorial = false;
+      }
+    }
+
+    if (tutNextBtn) {
+      tutNextBtn.addEventListener('click', () => {
+        if (tutCurrentStep < TUT_TOTAL - 1) {
+          renderTutStep(tutCurrentStep + 1);
+        } else {
+          closeTutorial();
+        }
+      });
+    }
+    if (tutPrevBtn) {
+      tutPrevBtn.addEventListener('click', () => {
+        if (tutCurrentStep > 0) renderTutStep(tutCurrentStep - 1);
+      });
+    }
+    if (tutSkipBtn) tutSkipBtn.addEventListener('click', closeTutorial);
+    if (tutCloseBtn) tutCloseBtn.addEventListener('click', closeTutorial);
+
+    // Confirm Team and enter Mandatory Tutorial Briefing
     function handleTeamConfirm() {
       const name = (teamNameInput ? teamNameInput.value : '').trim();
       if (!name) {
@@ -1594,9 +1753,8 @@
       hideTeamError();
       const saved = setActiveTeam(name, selectedBadge);
       try { audio.match(); } catch {}
-      // Register team presence into host lobby roster as WAITING
-      registerLobbyTeam(saved.name, saved.badge, 'WAITING');
-      showWaitingView(saved);
+      // Automatically launch mandatory tutorial briefing before entering waiting room
+      openTutorial(true, saved);
       return saved;
     }
 
@@ -1841,12 +1999,12 @@
       leaderboardModal.style.display = 'flex';
     }
 
-    leaderboardBtn.addEventListener('click', openLeaderboard);
-    lobbyViewLbBtn.addEventListener('click', openLeaderboard);
+    if (leaderboardBtn) leaderboardBtn.addEventListener('click', openLeaderboard);
+    if (lobbyViewLbBtn) lobbyViewLbBtn.addEventListener('click', openLeaderboard);
     if (waitingViewLbBtn2) waitingViewLbBtn2.addEventListener('click', openLeaderboard);
     if (goLeaderboardBtn) goLeaderboardBtn.addEventListener('click', openLeaderboard);
-    lbCloseBtn.addEventListener('click', () => { leaderboardModal.style.display = 'none'; });
-    lbDoneBtn.addEventListener('click', () => { leaderboardModal.style.display = 'none'; });
+    if (lbCloseBtn) lbCloseBtn.addEventListener('click', () => { leaderboardModal.style.display = 'none'; });
+    if (lbDoneBtn) lbDoneBtn.addEventListener('click', () => { leaderboardModal.style.display = 'none'; });
 
     if (goSwitchTeamBtn) {
       goSwitchTeamBtn.addEventListener('click', () => {
@@ -1862,53 +2020,22 @@
       });
     }
 
-    hudTeamDisplay.addEventListener('click', () => {
-      if (confirm('Return to team setup? Current game will pause.')) {
-        if (game) {
-          game.destroy();
-          game = null;
+    if (hudTeamDisplay) {
+      hudTeamDisplay.addEventListener('click', () => {
+        if (confirm('Return to team setup? Current game will pause.')) {
+          if (game) {
+            game.destroy();
+            game = null;
+          }
+          showSetupView();
         }
-        showSetupView();
-      }
-    });
-
-    // ─── Tutorial Controls ────────────────────────────────
-    const tutorialModal  = document.getElementById('tutorial-modal');
-    const tutCloseBtn    = document.getElementById('tut-close-btn');
-    const tutSkipBtn     = document.getElementById('tut-skip-btn');
-    const tutPrevBtn     = document.getElementById('tut-prev-btn');
-    const tutNextBtn     = document.getElementById('tut-next-btn');
-    const tutDots        = document.getElementById('tut-dots');
-    const tutProgress    = document.getElementById('tut-progress-fill');
-    const tutPanes       = tutorialModal.querySelectorAll('.tut-step-pane');
-    let tutCurrentStep   = 0;
-    const TUT_TOTAL      = tutPanes.length;
-
-    function renderTutStep(step) {
-      tutCurrentStep = Math.max(0, Math.min(step, TUT_TOTAL - 1));
-      tutPanes.forEach((pane, i) => pane.classList.toggle('active', i === tutCurrentStep));
-      tutDots.querySelectorAll('.tut-dot').forEach((dot, i) => dot.classList.toggle('active', i === tutCurrentStep));
-      tutProgress.style.width = `${((tutCurrentStep + 1) / TUT_TOTAL) * 100}%`;
-      tutPrevBtn.disabled = tutCurrentStep === 0;
-      tutNextBtn.textContent = tutCurrentStep === TUT_TOTAL - 1 ? 'Start Playing! 🚀' : 'Next Step →';
+      });
     }
 
-    function openTutorial() {
-      renderTutStep(0);
-      tutorialModal.style.display = 'flex';
-    }
-
-    tutNextBtn.addEventListener('click', () => {
-      if (tutCurrentStep < TUT_TOTAL - 1) renderTutStep(tutCurrentStep + 1);
-      else tutorialModal.style.display = 'none';
-    });
-    tutPrevBtn.addEventListener('click', () => {
-      if (tutCurrentStep > 0) renderTutStep(tutCurrentStep - 1);
-    });
-    tutSkipBtn.addEventListener('click', () => { tutorialModal.style.display = 'none'; });
-    tutCloseBtn.addEventListener('click', () => { tutorialModal.style.display = 'none'; });
-    document.getElementById('tutorial-btn').addEventListener('click', openTutorial);
-    lobbyViewTutBtn.addEventListener('click', openTutorial);
+    const hudTutorialBtn = document.getElementById('tutorial-btn');
+    if (hudTutorialBtn) hudTutorialBtn.addEventListener('click', () => openTutorial(false));
+    if (lobbyViewTutBtn) lobbyViewTutBtn.addEventListener('click', () => openTutorial(false));
+    if (waitingViewTutBtn2) waitingViewTutBtn2.addEventListener('click', () => openTutorial(false));
 
     const audioToggleBtn = document.getElementById('audio-toggle');
     if (audioToggleBtn) {
