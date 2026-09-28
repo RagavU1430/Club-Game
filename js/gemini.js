@@ -2,8 +2,8 @@
 
 export const GEMINI_CONFIG = {
   apiKey: localStorage.getItem('wordwave_gemini_key') || '',
-  modelFlash: 'gemini-2.5-flash',
-  modelEmbedding: 'gemini-embedding-001',
+  modelFlash: 'gemini-2.0-flash',
+  modelEmbedding: 'text-embedding-004',
   apiBase: 'https://generativelanguage.googleapis.com/v1beta/models'
 };
 
@@ -31,6 +31,7 @@ class GeminiService {
    * Returns: { score: 0.0 - 1.0, relationship: string, explanation: string }
    */
   async analyzeRelation(clue, word) {
+    if (!this.key) return null;
     const cacheKey = `${clue.toLowerCase()}::${word.toLowerCase()}`;
     if (this.cache.has(cacheKey)) return this.cache.get(cacheKey);
 
@@ -86,7 +87,7 @@ Output JSON with keys:
    * Returns sorted list of matches: [{ word, score, relationship, explanation }]
    */
   async matchClueAgainstBoard(clue, words) {
-    if (!words || words.length === 0) return [];
+    if (!this.key || !words || words.length === 0) return [];
 
     const prompt = `You are a semantic word association referee for the word game WordWave.
 The player submitted the CLUE: "${clue}".
@@ -135,6 +136,7 @@ Return a JSON array of objects, sorted descending by score:
    * Generate creative clues, associations and trivia for any given word.
    */
   async generateCluesForWord(word, count = 6) {
+    if (!this.key) return [];
     const prompt = `Give ${count} creative, high-quality semantic clues or associations for the word: "${word}".
 Return JSON array of strings: ["clue1", "clue2", ...]`;
 
@@ -159,9 +161,10 @@ Return JSON array of strings: ["clue1", "clue2", ...]`;
   }
 
   /**
-   * Generate 3072-dimensional vector embedding using Google Gemini Embedding Model
+   * Generate vector embedding using Google Gemini Embedding Model
    */
   async getEmbedding(text) {
+    if (!this.key) return null;
     const key = text.toLowerCase().trim();
     if (this.embedCache.has(key)) return this.embedCache.get(key);
 

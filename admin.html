@@ -71,6 +71,7 @@
     </header>
 
     <!-- Top Stats Overview -->
+    <!-- Top Stats Overview -->
     <div class="admin-stats-grid">
       <div class="stat-card">
         <div class="stat-icon">📡</div>
@@ -80,10 +81,26 @@
         </div>
       </div>
 
+      <div class="stat-card" style="border-color:rgba(251, 191, 36, 0.35);">
+        <div class="stat-icon" style="background:rgba(251, 191, 36, 0.15);border-color:rgba(251, 191, 36, 0.4);">⏳</div>
+        <div class="stat-meta">
+          <div class="stat-label" style="color:#FCD34D;">TEAMS IN LOBBY</div>
+          <div class="stat-val" id="stat-waiting-count" style="color:#FBBF24;">0</div>
+        </div>
+      </div>
+
+      <div class="stat-card" style="border-color:rgba(74, 222, 128, 0.35);">
+        <div class="stat-icon" style="background:rgba(74, 222, 128, 0.15);border-color:rgba(74, 222, 128, 0.4);">🎮</div>
+        <div class="stat-meta">
+          <div class="stat-label" style="color:#86EFAC;">TEAMS PLAYING</div>
+          <div class="stat-val" id="stat-playing-count" style="color:#4ADE80;">0</div>
+        </div>
+      </div>
+
       <div class="stat-card">
         <div class="stat-icon">👥</div>
         <div class="stat-meta">
-          <div class="stat-label">PARTICIPATING TEAMS</div>
+          <div class="stat-label">RECORDED TEAMS</div>
           <div class="stat-val" id="stat-team-count">0</div>
         </div>
       </div>
@@ -145,6 +162,42 @@
         <button type="button" class="btn-secondary" id="btn-send-announcement" style="padding:8px 18px;font-size:0.85rem;white-space:nowrap;">
           Send Broadcast
         </button>
+      </div>
+    </section>
+
+    <!-- Real-time Connected Teams Lobby & Arena Tracker -->
+    <section class="admin-card" id="lobby-roster-section">
+      <div class="card-top-bar">
+        <div class="card-title-group">
+          <h3>👥 Live Connected Teams &amp; Lobby Roster</h3>
+          <p>Real-time monitor of incoming teams in the lobby and active players in the arena.</p>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="lobby-summary-pills">
+            <span class="pill-waiting" id="pill-waiting-summary" style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.35);color:#FBBF24;padding:4px 10px;border-radius:20px;font-size:0.8rem;font-weight:700;">
+              ⏳ 0 Waiting
+            </span>
+            <span class="pill-playing" id="pill-playing-summary" style="background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.35);color:#4ADE80;padding:4px 10px;border-radius:20px;font-size:0.8rem;font-weight:700;">
+              🎮 0 Playing
+            </span>
+            <span class="pill-completed" id="pill-completed-summary" style="background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.35);color:var(--cyan);padding:4px 10px;border-radius:20px;font-size:0.8rem;font-weight:700;">
+              ✅ 0 Finished
+            </span>
+          </div>
+
+          <button type="button" class="btn-secondary" id="btn-clear-lobby" style="font-size:0.82rem;padding:6px 12px;" title="Reset lobby presence list">
+            🧹 Clear Lobby
+          </button>
+        </div>
+      </div>
+
+      <div class="lobby-teams-grid" id="lobby-teams-grid">
+        <!-- Live team cards rendered by JS -->
+      </div>
+
+      <div id="lobby-empty-msg" style="text-align:center;padding:32px 16px;color:var(--muted);font-weight:600;font-size:0.9rem;border:1px dashed rgba(255,255,255,0.1);border-radius:14px;margin-top:12px;">
+        <span>⏳</span> No teams connected to the lobby yet. Teams will appear here automatically when they enter their name on <a href="participant.html" target="_blank" style="color:var(--cyan);text-decoration:underline;">participant.html</a>!
       </div>
     </section>
 
@@ -230,9 +283,12 @@
       clearLeaderboard,
       exportLeaderboardCSV,
       getMatchState,
-      broadcastMatchState
-    } from './js/storage.js';
-    import { audio, sound } from './js/audio.js';
+      broadcastMatchState,
+      getLobbyTeams,
+      clearLobbyTeams,
+      removeLobbyTeam
+    } from './js/storage.js?v=2';
+    import { audio, sound } from './js/audio.js?v=2';
 
     // ─── Elements ──────────────────────────────────────────
     const authOverlay        = document.getElementById('auth-overlay');
@@ -244,6 +300,8 @@
     const logoutBtn          = document.getElementById('logout-btn');
 
     const statMatchStatus    = document.getElementById('stat-match-status');
+    const statWaitingCount   = document.getElementById('stat-waiting-count');
+    const statPlayingCount   = document.getElementById('stat-playing-count');
     const statTeamCount      = document.getElementById('stat-team-count');
     const statHighScore      = document.getElementById('stat-high-score');
     const statBestStreak     = document.getElementById('stat-best-streak');
@@ -256,6 +314,13 @@
     const btnBroadcastLobby  = document.getElementById('btn-broadcast-lobby');
     const broadcastMsgInput  = document.getElementById('broadcast-msg-input');
     const btnSendAnnouncement= document.getElementById('btn-send-announcement');
+
+    const pillWaitingSummary = document.getElementById('pill-waiting-summary');
+    const pillPlayingSummary = document.getElementById('pill-playing-summary');
+    const pillCompletedSummary = document.getElementById('pill-completed-summary');
+    const lobbyTeamsGrid     = document.getElementById('lobby-teams-grid');
+    const lobbyEmptyMsg      = document.getElementById('lobby-empty-msg');
+    const btnClearLobby      = document.getElementById('btn-clear-lobby');
 
     const tableSearch        = document.getElementById('table-search');
     const adminTableBody     = document.getElementById('admin-table-body');
@@ -313,16 +378,33 @@
     });
 
     // ─── Dashboard Controller ──────────────────────────────
+    let hasStorageListener = false;
+    let lobbyPollInterval = null;
+
     function initDashboard() {
       renderMatchStateUI();
       renderLeaderboard();
-      // Listen to cross-tab updates (participants finishing games, scores submitting)
-      window.addEventListener('storage', (e) => {
-        if (e.key === 'wordwave_leaderboard' || e.key === 'wordwave_match_state') {
-          renderLeaderboard();
-          renderMatchStateUI();
-        }
-      });
+      renderLobbyTeamsUI();
+
+      // Listen to cross-tab updates (teams joining lobby, status changes, scores submitting)
+      if (!hasStorageListener) {
+        hasStorageListener = true;
+        window.addEventListener('storage', (e) => {
+          if (e.key === 'wordwave_leaderboard') {
+            renderLeaderboard();
+          } else if (e.key === 'wordwave_match_state') {
+            renderMatchStateUI();
+          } else if (e.key === 'wordwave_lobby_teams') {
+            renderLobbyTeamsUI();
+          }
+        });
+      }
+
+      if (!lobbyPollInterval) {
+        lobbyPollInterval = setInterval(() => {
+          renderLobbyTeamsUI();
+        }, 1000);
+      }
     }
 
     function renderMatchStateUI() {
@@ -341,6 +423,80 @@
         currentBadge.classList.add('lobby');
         statMatchStatus.style.color = 'var(--cyan)';
       }
+    }
+
+    // ─── Real-Time Lobby Teams Monitor ─────────────────────
+    function renderLobbyTeamsUI() {
+      const teams = getLobbyTeams();
+      const waitingTeams   = teams.filter(t => t.status === 'WAITING');
+      const playingTeams   = teams.filter(t => t.status === 'PLAYING');
+      const completedTeams = teams.filter(t => t.status === 'COMPLETED');
+
+      // Update stat counters
+      if (statWaitingCount) statWaitingCount.textContent = waitingTeams.length;
+      if (statPlayingCount) statPlayingCount.textContent = playingTeams.length;
+
+      // Update summary pills
+      if (pillWaitingSummary) pillWaitingSummary.textContent = `⏳ ${waitingTeams.length} Waiting`;
+      if (pillPlayingSummary) pillPlayingSummary.textContent = `🎮 ${playingTeams.length} Playing`;
+      if (pillCompletedSummary) pillCompletedSummary.textContent = `✅ ${completedTeams.length} Finished`;
+
+      // Update start button text with real-time waiting team count
+      if (btnBroadcastStart) {
+        if (waitingTeams.length > 0) {
+          btnBroadcastStart.innerHTML = `<span>🚀</span> BROADCAST START (${waitingTeams.length} WAITING TEAM${waitingTeams.length === 1 ? '' : 'S'})`;
+        } else {
+          btnBroadcastStart.innerHTML = `<span>🚀</span> BROADCAST START (3s COUNTDOWN)`;
+        }
+      }
+
+      if (!teams.length) {
+        lobbyTeamsGrid.innerHTML = '';
+        lobbyEmptyMsg.style.display = 'block';
+        return;
+      }
+      lobbyEmptyMsg.style.display = 'none';
+
+      lobbyTeamsGrid.innerHTML = '';
+      teams.forEach(t => {
+        const card = document.createElement('div');
+        const stClass = t.status === 'PLAYING' ? 'status-playing' : (t.status === 'COMPLETED' ? 'status-completed' : 'status-waiting');
+        const stLabel = t.status === 'PLAYING' ? 'PLAYING NOW 🔥' : (t.status === 'COMPLETED' ? 'FINISHED ROUND' : 'WAITING IN LOBBY ⏳');
+        card.className = `lobby-team-card ${stClass}`;
+        card.innerHTML = `
+          <div class="lobby-card-badge">${t.badge || '⚡'}</div>
+          <div class="lobby-card-info">
+            <div class="lobby-card-name" title="${t.name}">${t.name}</div>
+            <div class="lobby-card-status">
+              <span class="status-dot-sm"></span>
+              <span class="status-text">${stLabel}</span>
+            </div>
+          </div>
+          <button type="button" class="btn-kick-team" data-name="${t.name}" title="Remove team from lobby">✕</button>
+        `;
+        lobbyTeamsGrid.appendChild(card);
+      });
+
+      // Hook kick handlers
+      lobbyTeamsGrid.querySelectorAll('.btn-kick-team').forEach(btn => {
+        btn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          const teamName = ev.currentTarget.getAttribute('data-name');
+          if (confirm(`Remove team "${teamName}" from the live lobby?`)) {
+            removeLobbyTeam(teamName);
+            renderLobbyTeamsUI();
+          }
+        });
+      });
+    }
+
+    if (btnClearLobby) {
+      btnClearLobby.addEventListener('click', () => {
+        if (confirm('Are you sure you want to clear the live lobby team roster? Connected teams will reconnect automatically.')) {
+          clearLobbyTeams();
+          renderLobbyTeamsUI();
+        }
+      });
     }
 
     function renderLeaderboard() {
@@ -414,14 +570,22 @@
 
     // ─── Broadcast Controls ────────────────────────────────
     btnBroadcastStart.addEventListener('click', () => {
+      // Mark all WAITING teams in the lobby as PLAYING
+      const teams = getLobbyTeams();
+      teams.forEach(t => {
+        if (t.status === 'WAITING') t.status = 'PLAYING';
+      });
+      try { localStorage.setItem('wordwave_lobby_teams', JSON.stringify(teams)); } catch {}
+
       // Broadcast countdown
       broadcastMatchState({
         status: 'COUNTDOWN',
         countdownDuration: 3,
         message: 'Get Ready! Match starts in 3 seconds!'
       });
-      audio.countdown(3);
+      try { audio.countdown(false); } catch {}
       renderMatchStateUI();
+      renderLobbyTeamsUI();
 
       // Automatically flip to ACTIVE after 3.2s
       setTimeout(() => {
@@ -430,6 +594,7 @@
           message: 'Match is LIVE! Clear words!'
         });
         renderMatchStateUI();
+        renderLobbyTeamsUI();
       }, 3400);
     });
 
@@ -442,11 +607,19 @@
     });
 
     btnBroadcastLobby.addEventListener('click', () => {
+      // Reset all PLAYING teams back to WAITING
+      const teams = getLobbyTeams();
+      teams.forEach(t => {
+        if (t.status === 'PLAYING') t.status = 'WAITING';
+      });
+      try { localStorage.setItem('wordwave_lobby_teams', JSON.stringify(teams)); } catch {}
+
       broadcastMatchState({
         status: 'LOBBY',
         message: 'Round reset. Please choose your team in the lobby.'
       });
       renderMatchStateUI();
+      renderLobbyTeamsUI();
     });
 
     btnSendAnnouncement.addEventListener('click', () => {

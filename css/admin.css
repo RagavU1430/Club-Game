@@ -597,3 +597,135 @@ body.admin-body {
   flex-direction: column;
   gap: 18px;
 }
+
+/* ─── Real-time Connected Lobby & Arena Roster ─────────── */
+.lobby-summary-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lobby-teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.lobby-team-card {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.lobby-team-card:hover {
+  border-color: rgba(0, 212, 255, 0.35);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.lobby-team-card.status-waiting {
+  border-left: 4px solid #FBBF24;
+}
+
+.lobby-team-card.status-playing {
+  border-left: 4px solid #4ADE80;
+  box-shadow: 0 0 16px rgba(74, 222, 128, 0.12);
+}
+
+.lobby-team-card.status-completed {
+  border-left: 4px solid var(--cyan);
+}
+
+.lobby-card-badge {
+  font-size: 1.6rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lobby-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.lobby-card-name {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lobby-card-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-top: 3px;
+}
+
+.lobby-card-status .status-dot-sm {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-waiting .status-dot-sm {
+  background: #FBBF24;
+  box-shadow: 0 0 8px #FBBF24;
+  animation: pulse-beacon 1.4s infinite alternate;
+}
+.status-waiting .status-text {
+  color: #FCD34D;
+}
+
+.status-playing .status-dot-sm {
+  background: #4ADE80;
+  box-shadow: 0 0 10px #4ADE80;
+  animation: pulse-beacon 0.8s infinite alternate;
+}
+.status-playing .status-text {
+  color: #86EFAC;
+}
+
+.status-completed .status-dot-sm {
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+}
+.status-completed .status-text {
+  color: var(--cyan);
+}
+
+.btn-kick-team {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 6px;
+  opacity: 0.6;
+  transition: opacity 0.2s, color 0.2s, background 0.2s;
+}
+
+.btn-kick-team:hover {
+  opacity: 1;
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.15);
+}
+

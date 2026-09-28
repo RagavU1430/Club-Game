@@ -36,7 +36,7 @@ export const WORDS = {
     // 💛 People & Actions
     'baby', 'boy', 'girl', 'king', 'queen', 'smile', 'sleep', 'dream', 'walk', 'run',
     'jump', 'swim', 'dance', 'sing', 'laugh', 'play', 'love', 'happy', 'light', 'music',
-    'game', 'gold'
+    'game', 'gold', 'heart', 'cherry', 'plant', 'nature', 'night', 'magic', 'warm'
   ],
 
   // Fallback lists kept strictly accessible
@@ -172,7 +172,14 @@ export const SAMPLE_CLUES = {
   dance:     ['music', 'move', 'rhythm', 'party', 'song', 'feet'],
   sing:      ['song', 'voice', 'music', 'mic', 'melody', 'tune'],
   game:      ['play', 'fun', 'win', 'score', 'arcade', 'video'],
-  music:     ['sound', 'song', 'listen', 'melody', 'audio', 'instrument']
+  music:     ['sound', 'song', 'listen', 'melody', 'audio', 'instrument'],
+  heart:     ['love', 'beat', 'chest', 'pulse', 'red', 'card', 'romance'],
+  cherry:    ['fruit', 'red', 'sweet', 'pie', 'berry', 'tree', 'topping'],
+  plant:     ['grow', 'green', 'leaf', 'garden', 'flower', 'soil', 'water'],
+  nature:    ['outdoors', 'green', 'forest', 'wild', 'trees', 'earth', 'life'],
+  night:     ['dark', 'moon', 'stars', 'sleep', 'evening', 'midnight', 'sky'],
+  magic:     ['spell', 'wizard', 'wand', 'trick', 'mystic', 'powers', 'illusion'],
+  warm:      ['hot', 'sun', 'heat', 'cozy', 'summer', 'fire', 'blanket']
 };
 
 // Color theme word groups
@@ -193,11 +200,11 @@ export function getPoolForTime(secs = 0) {
 }
 
 // Pick a random word, avoiding recently used words
-export function pickWord(pool, usedSet, fallback = WORDS.easy) {
+export function pickWord(pool, usedSet = new Set(), fallback = WORDS.easy) {
   const currentPool = pool && pool.length ? pool : WORDS.easy;
-  const available = currentPool.filter(w => !usedSet.has(w));
+  const safeUsed = usedSet || new Set();
+  const available = currentPool.filter(w => !safeUsed.has(w));
   if (!available.length) {
-    usedSet.clear();
     return fallback[Math.floor(Math.random() * fallback.length)];
   }
   return available[Math.floor(Math.random() * available.length)];

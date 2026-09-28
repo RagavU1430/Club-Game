@@ -52,9 +52,18 @@ class AudioEngine {
     this._osc(440, 'sine', 0.18, 0.12, null, 660);
   }
 
+  // Team match / join confirmation sound
+  match() {
+    this._ensureContext();
+    const now = this.ctx ? this.ctx.currentTime : 0;
+    this._osc(587, 'sine', 0.18, 0.14, now, 880);
+    this._osc(880, 'triangle', 0.12, 0.16, now + 0.05, 1174);
+  }
+
   // Perfect hit — fuller chord arpeggio
   hitPerfect() {
-    const now = this.ctx?.currentTime ?? 0;
+    this._ensureContext();
+    const now = this.ctx ? this.ctx.currentTime : 0;
     this._osc(523, 'sine', 0.22, 0.18, now);
     this._osc(659, 'sine', 0.18, 0.18, now + 0.06);
     this._osc(784, 'sine', 0.14, 0.18, now + 0.12);
@@ -77,14 +86,16 @@ class AudioEngine {
 
   // Combo! — ascending scale burst
   combo(multiplier = 2) {
-    const now = this.ctx?.currentTime ?? 0;
+    this._ensureContext();
+    const now = this.ctx ? this.ctx.currentTime : 0;
     const freqs = [523,659,784,1046,1319].slice(0, Math.min(multiplier + 1, 5));
     freqs.forEach((f, i) => this._osc(f, 'sine', 0.15, 0.14, now + i * 0.07));
   }
 
   // Streak clear — triumphant sweep
   streakClear() {
-    const now = this.ctx?.currentTime ?? 0;
+    this._ensureContext();
+    const now = this.ctx ? this.ctx.currentTime : 0;
     [523,659,784,1046,1319,1568].forEach((f, i) => {
       this._osc(f, 'sine', 0.18, 0.2, now + i * 0.06);
     });
@@ -93,7 +104,8 @@ class AudioEngine {
 
   // Chain block clear — single plop
   chainPop(delay = 0) {
-    const now = (this.ctx?.currentTime ?? 0) + delay;
+    this._ensureContext();
+    const now = (this.ctx ? this.ctx.currentTime : 0) + delay;
     this._osc(300 + delay * 80, 'sine', 0.14, 0.1, now, 500 + delay * 100);
   }
 
@@ -106,7 +118,8 @@ class AudioEngine {
 
   // Game over — descending
   gameOver() {
-    const now = this.ctx?.currentTime ?? 0;
+    this._ensureContext();
+    const now = this.ctx ? this.ctx.currentTime : 0;
     [523,415,330,262].forEach((f, i) => this._osc(f, 'triangle', 0.2, 0.25, now + i * 0.18));
   }
 
@@ -121,7 +134,8 @@ class AudioEngine {
   // Robot throws a new word — energetic sci-fi whoosh / launch chirp
   robotThrow() {
     if (!this.enabled) return;
-    const now = this.ctx?.currentTime ?? 0;
+    this._ensureContext();
+    const now = this.ctx ? this.ctx.currentTime : 0;
     this._osc(280, 'sine', 0.08, 0.15, now, 680);
     this._osc(480, 'triangle', 0.04, 0.10, now + 0.04, 820);
   }
@@ -129,15 +143,18 @@ class AudioEngine {
   // Robot word lands in the stack — satisfying high-tech thud & chime
   robotLand() {
     if (!this.enabled) return;
-    const now = this.ctx?.currentTime ?? 0;
+    this._ensureContext();
+    const now = this.ctx ? this.ctx.currentTime : 0;
     this._osc(420, 'triangle', 0.09, 0.10, now, 180);
     this._osc(880, 'sine', 0.06, 0.08, now + 0.03);
   }
 
-  // Match countdown beeps (3, 2, 1, GO!)
-  countdown(isFinal = false) {
+  // Match countdown beeps (3, 2, 1, GO!) — handles boolean or step number (0 = GO!)
+  countdown(arg = false) {
     if (!this.enabled) return;
-    const now = this.ctx?.currentTime ?? 0;
+    this._ensureContext();
+    const isFinal = (arg === true || arg === 0 || arg === '0' || arg === 'go' || arg === 'GO');
+    const now = this.ctx ? this.ctx.currentTime : 0;
     if (isFinal) {
       this._osc(660, 'sine', 0.15, 0.22, now, 880);
       this._osc(880, 'triangle', 0.12, 0.22, now + 0.04, 1320);
@@ -164,5 +181,14 @@ export const sound = audio;
 if (typeof window !== 'undefined') {
   window.audio = audio;
   window.sound = audio;
+  const unlockAudio = () => {
+    audio._ensureContext();
+    window.removeEventListener('pointerdown', unlockAudio);
+    window.removeEventListener('keydown', unlockAudio);
+    window.removeEventListener('touchstart', unlockAudio);
+  };
+  window.addEventListener('pointerdown', unlockAudio, { passive: true });
+  window.addEventListener('keydown', unlockAudio, { passive: true });
+  window.addEventListener('touchstart', unlockAudio, { passive: true });
 }
 export default audio;

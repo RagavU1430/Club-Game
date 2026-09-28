@@ -878,7 +878,7 @@
   const goSwitchTeamBtn = document.getElementById('go-switch-team-btn');
   if (goSwitchTeamBtn) {
     goSwitchTeamBtn.addEventListener('click', () => {
-      document.getElementById('game-over-overlay').classList.remove('visible');
+      document.getElementById('game-over-overlay').classList.remove('active', 'visible');
       openLobby('team');
     });
   }
@@ -994,7 +994,7 @@
 
   // Play again handler
   document.getElementById('play-again-btn').addEventListener('click', () => {
-    document.getElementById('game-over-overlay').classList.remove('visible');
+    document.getElementById('game-over-overlay').classList.remove('active', 'visible');
     if (game) {
       game.destroy();
       game = null;

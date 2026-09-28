@@ -4,7 +4,7 @@ import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers
 
 
 // Use CDN-hosted models only
-env.allowLocalModels = true;
+env.allowLocalModels = false;
 env.useBrowserCache = true;
 
 // Hit thresholds — tuned for approachable, fun, and easy semantic matching
@@ -16,9 +16,12 @@ class SemanticEngine {
   constructor() {
     this.embedder = null;
     this.cache = new Map();   // word → Float32Array (LRU-capped)
+    this._pending = new Map(); // word → Promise<Float32Array> for concurrent in-flight deduplication
     this.ready = false;
     this._initPromise = null;
-    this._fileProgress = new Map(); // file → 0-100, for aggregate progress
+    this._listeners = new Set();
+    this._fileProgress = new Map(); // file → { progress, loaded, total }
+    this._lastProgress = 0;
   }
 
   /**
@@ -27,49 +30,51 @@ class SemanticEngine {
    * @param {Function} onProgress  called with { status, progress } during download (progress 0-100 overall)
    */
   async init(onProgress) {
+    if (onProgress) this._listeners.add(onProgress);
+
     if (this.ready) {
-      if (onProgress) { try { onProgress({ status: 'ready', progress: 100 }); } catch { } }
+      this._emit('ready', 100);
       return;
     }
     if (this._initPromise) return this._initPromise;
+
     this._initPromise = (async () => {
       try {
-        const emit = (status, progress) => {
-          if (onProgress) { try { onProgress({ status, progress }); } catch { } }
-        };
         this.embedder = await pipeline(
           'feature-extraction',
           'Xenova/all-MiniLM-L6-v2',
           {
             progress_callback: (ev) => {
-              // Transformers.js emits per-file events:
-              // {status:'initiate'|'progress'|'done'|'ready', file, progress, loaded, total}
               if (!ev || typeof ev !== 'object') return;
               const s = ev.status;
+              const file = ev.file || 'unknown';
+
               if (s === 'initiate') {
-                if (ev.file) this._fileProgress.set(ev.file, 0);
-                emit('initiate', this._overallProgress());
+                this._fileProgress.set(file, { progress: 0, loaded: 0, total: ev.total || 0 });
+                this._emit('initiate', this._overallProgress());
               } else if (s === 'progress') {
                 const p = typeof ev.progress === 'number' ? ev.progress : 0;
-                if (ev.file) this._fileProgress.set(ev.file, p);
-                emit('downloading', this._overallProgress());
+                this._fileProgress.set(file, { progress: p, loaded: ev.loaded || 0, total: ev.total || 0 });
+                this._emit('downloading', this._overallProgress());
               } else if (s === 'done') {
-                if (ev.file) this._fileProgress.set(ev.file, 100);
-                emit('downloading', this._overallProgress());
+                this._fileProgress.set(file, { progress: 100, loaded: ev.total || 1, total: ev.total || 1 });
+                this._emit('downloading', this._overallProgress());
               } else if (s === 'ready') {
-                emit('ready', 100);
+                this._lastProgress = 100;
+                this._emit('ready', 100);
               } else if (typeof ev.progress === 'number') {
-                // Forward-compat: unknown status with numeric progress
-                emit('downloading', Math.max(0, Math.min(100, ev.progress)));
+                this._emit('downloading', Math.max(this._lastProgress, Math.min(100, Math.round(ev.progress))));
               }
             },
           }
         );
         this.ready = true;
-        if (onProgress) { try { onProgress({ status: 'ready', progress: 100 }); } catch { } }
+        this._lastProgress = 100;
+        this._emit('ready', 100);
       } catch (e) {
         this._initPromise = null;
         this._fileProgress.clear();
+        this._lastProgress = 0;
         console.error('[Semantic] Model load failed:', e);
         throw e;
       }
@@ -77,11 +82,42 @@ class SemanticEngine {
     return this._initPromise;
   }
 
+  _emit(status, progress) {
+    for (const cb of this._listeners) {
+      try { cb({ status, progress }); } catch {}
+    }
+  }
+
   _overallProgress() {
-    if (this._fileProgress.size === 0) return 0;
-    let sum = 0;
-    for (const v of this._fileProgress.values()) sum += Math.max(0, Math.min(100, v));
-    return Math.round(sum / this._fileProgress.size);
+    if (this._fileProgress.size === 0) return this._lastProgress;
+    let totalLoaded = 0;
+    let totalBytes = 0;
+    let fileSum = 0;
+
+    for (const [file, info] of this._fileProgress.entries()) {
+      if (info.total > 0) {
+        totalLoaded += info.loaded;
+        totalBytes += info.total;
+      }
+      // Weight ONNX model heavily if byte totals aren't yet populated
+      const weight = file.includes('onnx') ? 5 : 1;
+      fileSum += Math.max(0, Math.min(100, info.progress)) * weight;
+    }
+
+    let calculated = 0;
+    if (totalBytes > 0) {
+      calculated = Math.round((totalLoaded / totalBytes) * 100);
+    } else {
+      let totalWeight = 0;
+      for (const file of this._fileProgress.keys()) {
+        totalWeight += file.includes('onnx') ? 5 : 1;
+      }
+      calculated = totalWeight > 0 ? Math.round(fileSum / totalWeight) : 0;
+    }
+
+    // Keep progress strictly monotonic so bar never retreats
+    this._lastProgress = Math.max(this._lastProgress, Math.min(99, calculated));
+    return this._lastProgress;
   }
 
   /** Generate embedding vector for a word/phrase */
@@ -95,16 +131,38 @@ class SemanticEngine {
       this.cache.set(key, v);
       return v;
     }
-    if (!this.embedder) throw new Error('Model not loaded');
-    const out = await this.embedder(key, { pooling: 'mean', normalize: true });
-    const vec = out.data;           // Float32Array, 384 dims
-    this.cache.set(key, vec);
-    // Cap cache to avoid unbounded memory growth in long sessions
-    if (this.cache.size > 600) {
-      const oldest = this.cache.keys().next().value;
-      this.cache.delete(oldest);
+    // Deduplicate in-flight requests for the same word
+    if (this._pending.has(key)) {
+      return this._pending.get(key);
     }
-    return vec;
+
+    if (!this.embedder) {
+      if (this._initPromise) {
+        await this._initPromise;
+      } else {
+        await this.init();
+      }
+    }
+    if (!this.embedder) throw new Error('Model not loaded');
+
+    const promise = (async () => {
+      try {
+        const out = await this.embedder(key, { pooling: 'mean', normalize: true });
+        const vec = out.data;           // Float32Array, 384 dims
+        this.cache.set(key, vec);
+        // Cap cache to avoid unbounded memory growth in long sessions
+        if (this.cache.size > 600) {
+          const oldest = this.cache.keys().next().value;
+          this.cache.delete(oldest);
+        }
+        return vec;
+      } finally {
+        this._pending.delete(key);
+      }
+    })();
+
+    this._pending.set(key, promise);
+    return promise;
   }
 
   /** Cosine similarity — both vecs should be normalised (norm=1) */
@@ -124,11 +182,18 @@ class SemanticEngine {
   async findMatches(clue, words) {
     const clean = String(clue || '').toLowerCase().trim();
     if (!clean || !Array.isArray(words) || words.length === 0) return [];
-    const clueVec = await this.embed(clean);
-    // Embed all candidates in parallel (was sequential → 300-600ms freeze)
-    const vecs = await Promise.all(
-      words.map((w) => this.embed(String(w || '').toLowerCase()).catch(() => null))
-    );
+
+    // Embed clue and candidate words in parallel
+    const [clueVec, ...vecs] = await Promise.all([
+      this.embed(clean),
+      ...words.map((w) => {
+        const str = String(w || '').toLowerCase().trim();
+        return str ? this.embed(str).catch(() => null) : Promise.resolve(null);
+      })
+    ]);
+
+    if (!clueVec) return [];
+
     const results = [];
     for (let i = 0; i < words.length; i++) {
       if (!vecs[i]) continue;
@@ -162,4 +227,6 @@ class SemanticEngine {
   }
 }
 
-export const semanticEngine = new SemanticEngine();
+const globalEngine = (typeof globalThis !== 'undefined' && globalThis.__semanticEngine) || new SemanticEngine();
+if (typeof globalThis !== 'undefined') globalThis.__semanticEngine = globalEngine;
+export const semanticEngine = globalEngine;

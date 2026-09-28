@@ -239,4 +239,91 @@ export function broadcastMatchState(stateUpdate) {
   return next;
 }
 
+/* ─── Real-time Tournament Lobby Team Presence ─────────── */
+const LOBBY_TEAMS_KEY = 'wordwave_lobby_teams';
+
+export function getLobbyTeams() {
+  try {
+    const raw = localStorage.getItem(LOBBY_TEAMS_KEY);
+    if (raw) {
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) {
+        const now = Date.now();
+        // Keep teams seen within the last 90 seconds
+        return list.filter(t => t && t.name && (now - (t.lastSeen || 0) < 90000));
+      }
+    }
+  } catch {}
+  return [];
+}
+
+export function registerLobbyTeam(name, badge = '⚡', status = 'WAITING') {
+  if (!name || !name.trim()) return null;
+  const cleanName = name.trim().slice(0, 24);
+  const current = getLobbyTeams();
+  const existingIdx = current.findIndex(t => t.name.toLowerCase() === cleanName.toLowerCase());
+  const now = Date.now();
+  const teamObj = {
+    name: cleanName,
+    badge: badge || '⚡',
+    status: status, // 'WAITING', 'PLAYING', 'COMPLETED'
+    joinedAt: existingIdx >= 0 ? current[existingIdx].joinedAt : now,
+    lastSeen: now
+  };
+  if (existingIdx >= 0) {
+    current[existingIdx] = teamObj;
+  } else {
+    current.push(teamObj);
+  }
+  try {
+    localStorage.setItem(LOBBY_TEAMS_KEY, JSON.stringify(current));
+  } catch {}
+  return teamObj;
+}
+
+export function updateLobbyTeamStatus(name, status) {
+  if (!name || !name.trim()) return null;
+  const cleanName = name.trim().slice(0, 24);
+  const current = getLobbyTeams();
+  const existing = current.find(t => t.name.toLowerCase() === cleanName.toLowerCase());
+  if (existing) {
+    existing.status = status;
+    existing.lastSeen = Date.now();
+    try {
+      localStorage.setItem(LOBBY_TEAMS_KEY, JSON.stringify(current));
+    } catch {}
+    return existing;
+  }
+  return null;
+}
+
+export function heartbeatLobbyTeam(name) {
+  if (!name || !name.trim()) return;
+  const cleanName = name.trim().slice(0, 24);
+  const current = getLobbyTeams();
+  const existing = current.find(t => t.name.toLowerCase() === cleanName.toLowerCase());
+  if (existing) {
+    existing.lastSeen = Date.now();
+    try {
+      localStorage.setItem(LOBBY_TEAMS_KEY, JSON.stringify(current));
+    } catch {}
+  }
+}
+
+export function removeLobbyTeam(name) {
+  if (!name) return;
+  const cleanName = name.trim().toLowerCase();
+  const current = getLobbyTeams().filter(t => t.name.toLowerCase() !== cleanName);
+  try {
+    localStorage.setItem(LOBBY_TEAMS_KEY, JSON.stringify(current));
+  } catch {}
+}
+
+export function clearLobbyTeams() {
+  try {
+    localStorage.removeItem(LOBBY_TEAMS_KEY);
+  } catch {}
+}
+
+
 

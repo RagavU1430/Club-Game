@@ -1113,9 +1113,9 @@
             <div class="radar-ring"></div>
             <div class="radar-icon">📡</div>
           </div>
-          <div class="radar-status-title">WAITING FOR HOST TO START</div>
+          <div class="radar-status-title">WAITING FOR HOST TO START THE GAME</div>
           <div class="radar-status-sub" id="host-connection-sub">
-            Connected to Tournament Host! Stand by — your match countdown will start automatically when the host launches the round.
+            The host will start the game. Stand by — your match countdown will start automatically when the host clicks start!
           </div>
         </div>
 
@@ -1143,21 +1143,28 @@
     </div>
   </div>
 
-  <!-- ─── Game Over Overlay ────────────────────────────── -->
+  <!-- ─── Thank You / Match Completed Overlay ───────────── -->
   <div class="game-over-overlay" id="game-over-overlay">
-    <div class="game-over-card">
-      <div class="go-title">MATCH COMPLETED</div>
-      <div class="go-subtitle">Tournament Result Submitted</div>
+    <div class="game-over-card" style="position:relative; overflow:hidden;">
+      <div style="font-size:2.8rem; margin-bottom:6px; animation: pulse-beacon 1.2s infinite alternate;">🎉</div>
+      <div class="go-title" style="background: linear-gradient(135deg, #00D4FF, #A78BFA); -webkit-background-clip:text; -webkit-text-fill-color:transparent; font-size:1.85rem; font-weight:900; letter-spacing:0.02em;">
+        THANK YOU FOR PLAYING!
+      </div>
+      <div class="go-subtitle" style="font-size:0.88rem; color:#CBD5E1; margin-top:4px; margin-bottom:14px;">
+        Outstanding performance! Your score has been submitted to the Host Leaderboard.
+      </div>
+
       <div class="go-team-pill" id="go-team-pill">
         <span id="go-team-icon">⚡</span>
         <span id="go-team-name">Volt Strikers</span>
         <span class="go-rank-badge" id="go-rank-badge">🏆 Rank #1</span>
       </div>
+
       <div class="go-score-big" id="go-score">0</div>
       <div class="go-best" id="go-best">Best: 0</div>
-      <span class="go-new-best" id="go-new-best" style="display:none;">✨ NEW BEST!</span>
+      <span class="go-new-best" id="go-new-best" style="display:none;">✨ NEW BEST SCORE!</span>
 
-      <div class="go-stats" style="margin-top:16px; margin-bottom:20px;">
+      <div class="go-stats" style="margin-top:14px; margin-bottom:16px;">
         <div class="go-stat">
           <div class="go-stat-val" id="go-time">0:00</div>
           <div class="go-stat-lbl">⏱ Survival</div>
@@ -1168,11 +1175,12 @@
         </div>
       </div>
 
+      <div style="background:rgba(74, 222, 128, 0.12); border:1px solid rgba(74, 222, 128, 0.35); border-radius:12px; padding:9px 14px; color:#4ADE80; font-weight:700; font-size:0.82rem; margin-bottom:18px; display:flex; align-items:center; justify-content:center; gap:8px;">
+        <span>✅</span> Result recorded & synced with Admin Host!
+      </div>
 
-      <div style="margin-top:14px;">
-        <button type="button" class="btn-primary" id="go-next-team-btn" style="width:100%; padding:14px; font-size:1rem; font-weight:800; border-radius:12px; box-shadow:0 0 24px rgba(0,212,255,0.35);">
-          👥 Enter Team Name & Play Next Round →
-        </button>
+      <div style="background:rgba(255,255,255,0.04); border:1px dashed rgba(255,255,255,0.15); border-radius:12px; padding:12px 16px; color:#94A3B8; font-size:0.85rem; font-weight:600; text-align:center;">
+        <span>⏳</span> Please wait for the Host to announce final results or initiate the next round.
       </div>
     </div>
   </div>
@@ -1287,15 +1295,19 @@
 
   <!-- ─── Game Engine & Synchronization ────────────────── -->
   <script type="module">
-    import { ArcadeGame } from './js/arcade.js';
-    import { semanticEngine } from './js/semantic.js';
-    import { audio } from './js/audio.js';
+    import { ArcadeGame } from './js/arcade.js?v=2';
+    import { semanticEngine } from './js/semantic.js?v=2';
+    import { audio } from './js/audio.js?v=2';
     import {
       getActiveTeam,
       setActiveTeam,
       getLeaderboard,
-      getMatchState
-    } from './js/storage.js';
+      getMatchState,
+      registerLobbyTeam,
+      updateLobbyTeamStatus,
+      heartbeatLobbyTeam,
+      removeLobbyTeam
+    } from './js/storage.js?v=2';
 
     const bar     = document.getElementById('load-bar');
     const status  = document.getElementById('load-status');
@@ -1521,7 +1533,9 @@
       }
       hideTeamError();
       const saved = setActiveTeam(name, selectedBadge);
-      audio.match();
+      try { audio.match(); } catch {}
+      // Register team presence into host lobby roster as WAITING
+      registerLobbyTeam(saved.name, saved.badge, 'WAITING');
       showWaitingView(saved);
       return saved;
     }
@@ -1536,6 +1550,14 @@
       });
     }
 
+    // Heartbeat every 3.5 seconds to keep participant presence alive in host portal
+    setInterval(() => {
+      const current = getActiveTeam();
+      if (current && current.name) {
+        heartbeatLobbyTeam(current.name);
+      }
+    }, 3500);
+
     let game = null;
     let isLaunching = false;
 
@@ -1549,6 +1571,9 @@
       }
 
       isLaunching = true;
+      // Mark team as PLAYING in host lobby
+      updateLobbyTeamStatus(team.name, 'PLAYING');
+
       if (lobbyModal) lobbyModal.style.display = 'none';
       const gameOverEl = document.getElementById('game-over-overlay');
       if (gameOverEl) gameOverEl.classList.remove('active', 'visible');
@@ -1575,7 +1600,7 @@
         void cdRing.offsetWidth;
         cdRing.classList.add('pulse');
       }
-      audio.countdown(count);
+      try { audio.countdown(false); } catch {}
 
       const iv = setInterval(() => {
         count--;
@@ -1593,7 +1618,7 @@
             void cdRing.offsetWidth;
             cdRing.classList.add('pulse');
           }
-          audio.countdown(count);
+          try { audio.countdown(false); } catch {}
         } else if (count === 0) {
           countdownNumber.classList.add('go-active');
           countdownNumber.textContent = 'GO!';
@@ -1607,7 +1632,7 @@
             void cdRing.offsetWidth;
             cdRing.classList.add('pulse');
           }
-          audio.countdown(0);
+          try { audio.countdown(true); } catch {}
         } else {
           clearInterval(iv);
           countdownOverlay.classList.remove('active');
@@ -1624,10 +1649,14 @@
     }
 
     // ─── Real-time Admin Sync (Host Control Broadcast) ────
-    let lastMatchStateTimestamp = 0;
+    // Ignore any stale match timestamp from before participant opened the page
+    const initialMatchState = getMatchState();
+    let lastMatchStateTimestamp = (initialMatchState && initialMatchState.timestamp) ? initialMatchState.timestamp : Date.now();
 
     function handleHostSync(state) {
-      if (!state || !state.timestamp || state.timestamp === lastMatchStateTimestamp) return;
+      if (!state || !state.timestamp) return;
+      // Strictly ignore any old or duplicate state timestamps
+      if (state.timestamp <= lastMatchStateTimestamp) return;
       lastMatchStateTimestamp = state.timestamp;
 
       // Check if admin broadcast an announcement
@@ -1650,14 +1679,33 @@
         }
       }
 
+      // Check if admin paused the match
+      if (state.status === 'PAUSED') {
+        if (game && game.isRunning && !game._paused) {
+          game.pause();
+        }
+      }
+
+      // Check if admin resumed an already running match
+      if (state.status === 'ACTIVE') {
+        if (game && game.isRunning && game._paused) {
+          game.resume();
+        }
+        // NOTE: Waiting participants in the lobby MUST NOT auto-start here.
+        // They strictly wait for the host's COUNTDOWN signal!
+      }
+
       // Check if admin reset to lobby
       if (state.status === 'LOBBY') {
-        if (game && game.isRunning) {
+        const gameOverEl = document.getElementById('game-over-overlay');
+        if (gameOverEl) gameOverEl.classList.remove('active', 'visible');
+        if (game) {
           game.destroy();
           game = null;
         }
         const currentTeam = getActiveTeam();
         if (currentTeam && currentTeam.name && currentTeam.name.trim().length >= 2) {
+          updateLobbyTeamStatus(currentTeam.name, 'WAITING');
           showWaitingView(currentTeam);
         } else {
           showSetupView();
@@ -1683,14 +1731,11 @@
 
     if (paramTeam && paramTeam.trim()) {
       const saved = setActiveTeam(paramTeam.trim().slice(0, 22), paramBadge || selectedBadge || '⚡');
+      registerLobbyTeam(saved.name, saved.badge, 'WAITING');
       showWaitingView(saved);
     } else {
-      const current = getActiveTeam();
-      if (current && current.name && current.name.trim().length >= 2) {
-        showWaitingView(current);
-      } else {
-        showSetupView();
-      }
+      // Always show the Team Name Entry page first on open
+      showSetupView();
     }
 
     // ─── Leaderboard Modal ────────────────────────────────

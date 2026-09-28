@@ -534,6 +534,7 @@
 
 <script type="module">
   import { semanticEngine, THRESHOLD_GOOD, THRESHOLD_PERFECT } from './js/semantic.js';
+  import { geminiService } from './js/gemini.js';
 
   const inputEl    = document.getElementById('sandbox-input');
   const btnEl      = document.getElementById('sandbox-btn');
@@ -574,25 +575,35 @@
 
     try {
       const results = await semanticEngine.findMatches(clue, sampleWords);
-      const top = results[0];
+      const top = (results && results.length) ? results[0] : null;
 
       // Update chips UI
       sampleWords.forEach(w => {
         const chip = document.querySelector(`.sample-word[data-word="${w}"]`);
         const scoreSpan = document.getElementById(`score-${w}`);
         const res = results.find(r => r.word === w);
+        if (!res) {
+          if (scoreSpan) scoreSpan.textContent = '0%';
+          if (chip) chip.classList.remove('matched');
+          return;
+        }
         const pct = Math.max(0, Math.min(100, Math.round(((res.score + 0.1) / 1.0) * 100)));
 
-        scoreSpan.textContent = `${pct}%`;
+        if (scoreSpan) scoreSpan.textContent = `${pct}%`;
 
-        if (res.score >= THRESHOLD_GOOD) {
-          chip.classList.add('matched');
-        } else {
-          chip.classList.remove('matched');
+        if (chip) {
+          if (res.score >= THRESHOLD_GOOD) {
+            chip.classList.add('matched');
+          } else {
+            chip.classList.remove('matched');
+          }
         }
       });
 
-      if (top.score >= THRESHOLD_PERFECT) {
+      if (!top) {
+        feedbackEl.textContent = `❌ No match found for "${clue}". Try another clue!`;
+        feedbackEl.style.color = 'var(--warn)';
+      } else if (top.score >= THRESHOLD_PERFECT) {
         feedbackEl.textContent = `🔥 Perfect match! "${clue}" strongly matches "${top.word}" (${Math.round(top.score * 100)}% similarity).`;
         feedbackEl.style.color = 'var(--cyan)';
       } else if (top.score >= THRESHOLD_GOOD) {
@@ -617,7 +628,6 @@
   });
 
   // ─── Gemini Analyzer Handler ──────────────────────────
-  import { geminiService } from './js/gemini.js';
 
   const wordAInput = document.getElementById('gemini-word-a');
   const wordBInput = document.getElementById('gemini-word-b');

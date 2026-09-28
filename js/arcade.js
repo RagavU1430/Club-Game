@@ -1,9 +1,9 @@
 // js/arcade.js — Arcade game mode (full Semantris replication, polished & bug-free)
-import { semanticEngine, THRESHOLD_GOOD, THRESHOLD_PERFECT, THRESHOLD_NEAR_MISS } from './semantic.js';
+import { semanticEngine, THRESHOLD_GOOD, THRESHOLD_PERFECT, THRESHOLD_NEAR_MISS } from './semantic.js?v=2';
 import { getPoolForTime, pickWords, SAMPLE_CLUES } from './word-pool.js';
-import { saveScore, getHighScore, getActiveTeam, saveLeaderboardEntry } from './storage.js';
-import { audio }                     from './audio.js';
-import { geminiService }             from './gemini.js';
+import * as Storage from './storage.js?v=2';
+const { saveScore, getHighScore, getActiveTeam, saveLeaderboardEntry, updateLobbyTeamStatus } = Storage;
+import { audio }                     from './audio.js?v=2';
 
 /* ─── Config ─────────────────────────────────────────── */
 const CFG = {
@@ -190,6 +190,10 @@ export class ArcadeGame {
 
   /* ── Start the game ───────────────────────────────── */
   async start() {
+    // Cancel any active animation frames or intervals to prevent loop duplication
+    if (this._rafId) { cancelAnimationFrame(this._rafId); this._rafId = null; }
+    if (this._timerInterval) { clearInterval(this._timerInterval); this._timerInterval = null; }
+
     // Full state reset (safe for reuse, not just fresh instances)
     this.score = 0;
     this.streak = 0;
@@ -979,6 +983,9 @@ export class ArcadeGame {
       time: this.elapsed,
       maxStreak: this.maxStreak
     });
+    if (activeTeam && activeTeam.name) {
+      try { updateLobbyTeamStatus(activeTeam.name, 'COMPLETED'); } catch {}
+    }
 
     const teamPill = document.getElementById('go-team-pill');
     if (teamPill) {
