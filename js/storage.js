@@ -65,9 +65,12 @@ const LEGACY_SEED_IDS = ['lb_1', 'lb_2', 'lb_3'];
 export function getActiveTeam() {
   try {
     const raw = localStorage.getItem(TEAM_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.name) return parsed;
+    }
   } catch {}
-  return { name: 'Team Alpha', badge: '⚡' };
+  return { name: '', badge: '⚡' };
 }
 
 export function setActiveTeam(name, badge = '⚡') {

@@ -57,6 +57,34 @@
       animation: pulse-glow 1.5s infinite;
     }
 
+    /* Team name input validation error */
+    .team-input.error {
+      border-color: #F43F5E !important;
+      box-shadow: 0 0 16px rgba(244, 63, 94, 0.45) !important;
+      animation: team-input-shake 0.4s ease-in-out;
+    }
+    @keyframes team-input-shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .team-error-msg {
+      color: #F43F5E;
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-top: 8px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: rgba(244, 63, 94, 0.12);
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      border-radius: 8px;
+    }
+    .team-error-msg.visible {
+      display: flex;
+    }
+
     /* ─── Premium Tournament Arena Loading Screen ───────── */
     #loading-screen.loading-overlay {
       position: fixed;
@@ -839,10 +867,13 @@
       <p class="lobby-desc">Pick your team name and select your team logo from the <strong>30 official team logos</strong> below.</p>
 
       <div class="team-input-group">
-        <label for="team-name-input" class="team-label">YOUR TEAM NAME</label>
+        <label for="team-name-input" class="team-label">YOUR TEAM NAME <span style="color:#F43F5E;">*</span></label>
         <div class="team-input-wrap">
-          <input type="text" id="team-name-input" class="team-input" placeholder="e.g. Cyber Wolves" maxlength="22" autocomplete="off" spellcheck="false">
+          <input type="text" id="team-name-input" class="team-input" placeholder="Type your team name here (Required)..." maxlength="22" autocomplete="off" spellcheck="false" required>
           <button type="button" class="btn-random-name" id="random-name-btn" title="Pick Random Team & Logo">🎲 Random</button>
+        </div>
+        <div class="team-error-msg" id="team-error-msg">
+          <span>⚠️</span> <span id="team-error-text">Please enter a team name before starting!</span>
         </div>
       </div>
 
@@ -923,6 +954,11 @@
       </div>
 
 
+      <div style="margin-top:14px;">
+        <button type="button" class="btn-primary" id="go-next-team-btn" style="width:100%; padding:14px; font-size:1rem; font-weight:800; border-radius:12px; box-shadow:0 0 24px rgba(0,212,255,0.35);">
+          👥 Enter Team Name & Play Next Round →
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1146,13 +1182,35 @@
 
     const broadcastTicker   = document.getElementById('broadcast-ticker');
     const broadcastText     = document.getElementById('broadcast-text');
+    const teamErrorMsg      = document.getElementById('team-error-msg');
+    const teamErrorText     = document.getElementById('team-error-text');
+
+    function showTeamError(msg) {
+      if (teamErrorText) teamErrorText.textContent = msg || 'Please enter a team name before starting!';
+      if (teamErrorMsg) teamErrorMsg.classList.add('visible');
+      if (teamNameInput) {
+        teamNameInput.classList.remove('error');
+        void teamNameInput.offsetWidth;
+        teamNameInput.classList.add('error');
+        teamNameInput.focus();
+      }
+    }
+
+    function hideTeamError() {
+      if (teamErrorMsg) teamErrorMsg.classList.remove('visible');
+      if (teamNameInput) teamNameInput.classList.remove('error');
+    }
 
     function refreshTeamUI() {
       const team = getActiveTeam();
-      selectedBadge = team.badge || '⚡';
-      if (teamNameInput) teamNameInput.value = team.name || 'Volt Strikers';
+      selectedBadge = (team && team.badge) ? team.badge : (selectedBadge || '⚡');
+      // Always prompt user for team name! Never auto-fill dummy 'Volt Strikers'
+      if (teamNameInput) {
+        teamNameInput.value = '';
+        teamNameInput.placeholder = 'Type your team name here (Required)...';
+      }
       if (hudTeamBadge) hudTeamBadge.textContent = selectedBadge;
-      if (hudTeamName) hudTeamName.textContent = team.name || 'Volt Strikers';
+      if (hudTeamName) hudTeamName.textContent = (team && team.name) ? team.name : 'Enter Team Name';
       if (avatarGrid) {
         avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
           btn.classList.toggle('active', btn.getAttribute('data-badge') === selectedBadge);
@@ -1162,11 +1220,19 @@
 
     refreshTeamUI();
 
+    // Check if team was passed via URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramTeam = urlParams.get('team');
+    if (paramTeam && teamNameInput) {
+      teamNameInput.value = paramTeam.trim().slice(0, 22);
+    }
+
     // 🎲 Random Preset Button
     randomNameBtn.addEventListener('click', () => {
       const pick = TEAM_PRESETS[Math.floor(Math.random() * TEAM_PRESETS.length)];
       teamNameInput.value = pick.name;
       selectedBadge = pick.badge;
+      hideTeamError();
       if (avatarGrid) {
         avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
           btn.classList.toggle('active', btn.getAttribute('data-badge') === selectedBadge);
@@ -1189,13 +1255,28 @@
     let game = null;
 
     function saveCurrentTeam() {
-      const name = (teamNameInput.value || '').trim() || 'Volt Strikers';
+      const name = (teamNameInput.value || '').trim();
+      if (!name) {
+        showTeamError('⚠️ Team name is required! Please enter your team name.');
+        return null;
+      }
+      if (name.length < 2) {
+        showTeamError('⚠️ Team name must be at least 2 characters long.');
+        return null;
+      }
+      hideTeamError();
       return setActiveTeam(name, selectedBadge);
     }
 
     function triggerMatchStart() {
       const team = saveCurrentTeam();
-      refreshTeamUI();
+      if (!team) {
+        lobbyModal.style.display = 'flex';
+        teamNameInput.focus();
+        return;
+      }
+      if (hudTeamName) hudTeamName.textContent = team.name;
+      if (hudTeamBadge) hudTeamBadge.textContent = team.badge;
       lobbyModal.style.display = 'none';
       const gameOverEl = document.getElementById('game-over-overlay');
       if (gameOverEl) gameOverEl.classList.remove('active', 'visible');
@@ -1288,6 +1369,13 @@
 
           // Check if admin triggered start countdown
           if (state.status === 'COUNTDOWN') {
+            const currentName = (teamNameInput.value || '').trim();
+            if (!currentName) {
+              lobbyModal.style.display = 'flex';
+              showTeamError('⚡ Host is starting the match! Please enter your team name now!');
+              teamNameInput.focus();
+              return;
+            }
             if (lobbyModal.style.display !== 'none' || !game || !game.isRunning) {
               triggerMatchStart();
             }
@@ -1418,6 +1506,37 @@
       });
     }
 
+    // Team name keyboard listener (Enter to start)
+    if (teamNameInput) {
+      teamNameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          triggerMatchStart();
+        }
+      });
+      teamNameInput.addEventListener('input', () => {
+        hideTeamError();
+      });
+    }
+
+    // Go next round button on Game Over card
+    const goNextTeamBtn = document.getElementById('go-next-team-btn');
+    if (goNextTeamBtn) {
+      goNextTeamBtn.addEventListener('click', () => {
+        const goOverlay = document.getElementById('game-over-overlay');
+        if (goOverlay) goOverlay.classList.remove('active', 'visible');
+        refreshTeamUI();
+        lobbyModal.style.display = 'flex';
+        setTimeout(() => {
+          if (teamNameInput) {
+            teamNameInput.value = '';
+            hideTeamError();
+            teamNameInput.focus();
+          }
+        }, 80);
+      });
+    }
+
     // Initial finish loading
     if (loaded) {
       clearInterval(ft);
@@ -1426,6 +1545,7 @@
       setTimeout(() => {
         loadScr.style.display = 'none';
         lobbyModal.style.display = 'flex';
+        if (teamNameInput) teamNameInput.focus();
       }, 400);
     }
   </script>
