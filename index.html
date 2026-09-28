@@ -159,6 +159,156 @@
 
     /* Loading screen on top */
     #loading-screen { z-index: 200; }
+
+    /* ─── Team Registration Modal ───────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(4, 5, 13, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+      animation: modal-fade-in 0.25s ease-out;
+    }
+    @keyframes modal-fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .team-modal-card {
+      background: rgba(13, 17, 32, 0.96);
+      border: 1px solid rgba(0, 212, 255, 0.28);
+      border-radius: 24px;
+      padding: 32px 36px;
+      max-width: 480px; width: 100%;
+      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.8), 0 0 60px rgba(0, 212, 255, 0.12);
+      position: relative;
+      animation: card-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes card-pop {
+      from { transform: scale(0.92) translateY(12px); opacity: 0; }
+      to   { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .team-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .lobby-tag {
+      font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--cyan);
+      background: rgba(0, 212, 255, 0.12);
+      border: 1px solid rgba(0, 212, 255, 0.28);
+      padding: 4px 10px; border-radius: 999px;
+    }
+    .team-modal-close {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #94A3B8; font-size: 1rem; width: 32px; height: 32px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .team-modal-close:hover {
+      background: rgba(244, 63, 94, 0.2);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: #F43F5E;
+    }
+    .team-modal-title {
+      font-size: 1.6rem; font-weight: 900; letter-spacing: -0.03em;
+      margin: 0 0 6px 0; color: #fff;
+    }
+    .team-modal-title span { color: var(--cyan); }
+    .team-modal-desc {
+      font-size: 0.88rem; color: #94A3B8; line-height: 1.45;
+      margin: 0 0 20px 0;
+    }
+    .team-input-group {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 20px;
+    }
+    .team-label {
+      font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em;
+      color: #CBD5E1; text-transform: uppercase;
+    }
+    .team-input-wrap {
+      display: flex; gap: 8px;
+    }
+    .team-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1.5px solid rgba(0, 212, 255, 0.3);
+      border-radius: 12px;
+      padding: 13px 16px;
+      font-family: inherit; font-size: 1rem; font-weight: 600;
+      color: #fff; outline: none;
+      transition: all 0.2s;
+    }
+    .team-input:focus {
+      border-color: var(--cyan);
+      background: rgba(0, 212, 255, 0.08);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.25);
+    }
+    .team-input.error {
+      border-color: #F43F5E !important;
+      background: rgba(244, 63, 94, 0.08) !important;
+      animation: team-input-shake 0.35s ease;
+    }
+    @keyframes team-input-shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .btn-random-name {
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.35);
+      color: #DDD6FE; border-radius: 12px;
+      padding: 0 14px; font-weight: 700; font-size: 0.85rem;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .btn-random-name:hover {
+      background: rgba(139, 92, 246, 0.28);
+      border-color: rgba(139, 92, 246, 0.6);
+      transform: translateY(-1px);
+    }
+    .team-error-msg {
+      display: none; align-items: center; gap: 8px;
+      font-size: 0.82rem; font-weight: 700; color: #FDA4AF;
+      background: rgba(244, 63, 94, 0.12);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      padding: 8px 12px; border-radius: 8px;
+    }
+    .team-error-msg.visible { display: flex; }
+    .avatar-select-group {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 24px;
+    }
+    .avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
+    }
+    @media (max-width: 480px) {
+      .avatar-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .avatar-btn {
+      aspect-ratio: 1;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      font-size: 1.25rem;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.18s;
+    }
+    .avatar-btn:hover {
+      background: rgba(0, 212, 255, 0.15);
+      border-color: rgba(0, 212, 255, 0.4);
+      transform: scale(1.08);
+    }
+    .avatar-btn.active {
+      background: rgba(0, 212, 255, 0.25);
+      border-color: var(--cyan);
+      box-shadow: 0 0 14px rgba(0, 212, 255, 0.4);
+      transform: scale(1.08);
+    }
   </style>
 </head>
 <body>
@@ -240,8 +390,63 @@
 
 </main>
 
+<!-- ─── Team Registration Modal ───────────────────────── -->
+<div class="modal-overlay" id="team-modal" style="display:none;" role="dialog" aria-modal="true" aria-label="Participant Registration">
+  <div class="team-modal-card">
+    <div class="team-modal-header">
+      <span class="lobby-tag">👥 PARTICIPANT REGISTRATION</span>
+      <button type="button" class="team-modal-close" id="team-modal-close" title="Close">✕</button>
+    </div>
+
+    <h2 class="team-modal-title">WordWave <span>Team Setup</span></h2>
+    <p class="team-modal-desc">
+      Enter your team name and select your logo. After confirming, you will enter the arena and wait for the host to start the match!
+    </p>
+
+    <div class="team-input-group">
+      <label for="index-team-name-input" class="team-label">YOUR TEAM NAME <span style="color:#F43F5E;">*</span></label>
+      <div class="team-input-wrap">
+        <input type="text" id="index-team-name-input" class="team-input" placeholder="Type your team name here (Required)..." maxlength="22" autocomplete="off" spellcheck="false" required>
+        <button type="button" class="btn-random-name" id="index-random-name-btn" title="Pick Random Team & Logo">🎲 Random</button>
+      </div>
+      <div class="team-error-msg" id="index-team-error-msg">
+        <span>⚠️</span> <span id="index-team-error-text">Please enter a team name before joining!</span>
+      </div>
+    </div>
+
+    <div class="avatar-select-group">
+      <label class="team-label">CHOOSE TEAM LOGO</label>
+      <div class="avatar-grid" id="index-avatar-grid">
+        <button type="button" class="avatar-btn active" data-badge="⚡" title="Volt Lightning">⚡</button>
+        <button type="button" class="avatar-btn" data-badge="🐺" title="Cyber Wolf">🐺</button>
+        <button type="button" class="avatar-btn" data-badge="🚀" title="Cosmic Rocket">🚀</button>
+        <button type="button" class="avatar-btn" data-badge="👾" title="Pixel Alien">👾</button>
+        <button type="button" class="avatar-btn" data-badge="🔥" title="Inferno Flame">🔥</button>
+        <button type="button" class="avatar-btn" data-badge="💎" title="Crystal Diamond">💎</button>
+        <button type="button" class="avatar-btn" data-badge="👑" title="Royal Crown">👑</button>
+        <button type="button" class="avatar-btn" data-badge="🎯" title="Target Sniper">🎯</button>
+        <button type="button" class="avatar-btn" data-badge="🦁" title="Golden Lion">🦁</button>
+        <button type="button" class="avatar-btn" data-badge="🤖" title="Cyborg Bot">🤖</button>
+        <button type="button" class="avatar-btn" data-badge="🐉" title="Mystic Dragon">🐉</button>
+        <button type="button" class="avatar-btn" data-badge="🦅" title="Soaring Eagle">🦅</button>
+        <button type="button" class="avatar-btn" data-badge="🦈" title="Neon Shark">🦈</button>
+        <button type="button" class="avatar-btn" data-badge="🦊" title="Swift Fox">🦊</button>
+        <button type="button" class="avatar-btn" data-badge="⚔️" title="Dual Swords">⚔️</button>
+        <button type="button" class="avatar-btn" data-badge="🏆" title="Golden Trophy">🏆</button>
+      </div>
+    </div>
+
+    <div class="team-modal-actions">
+      <button type="button" class="play-btn" id="index-confirm-team-btn" style="width:100%;">
+        ENTER ARENA & WAIT FOR HOST 📡
+      </button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
   import { semanticEngine } from './js/semantic.js';
+  import { setActiveTeam, getActiveTeam } from './js/storage.js';
 
   const bar     = document.getElementById('load-bar');
   const status  = document.getElementById('load-status');
@@ -293,6 +498,149 @@
       loadScr.style.display = 'none';
       landing.style.display  = 'flex';
     }, 600);
+  }
+
+  // ─── Team Registration Modal Setup ──────────────────
+  const TEAM_PRESETS = [
+    { name: 'Volt Strikers',     badge: '⚡' },
+    { name: 'Cyber Wolves',      badge: '🐺' },
+    { name: 'Cosmic Rockets',    badge: '🚀' },
+    { name: 'Pixel Aliens',      badge: '👾' },
+    { name: 'Inferno Flames',    badge: '🔥' },
+    { name: 'Crystal Diamonds',  badge: '💎' },
+    { name: 'Royal Crowns',      badge: '👑' },
+    { name: 'Target Snipers',    badge: '🎯' },
+    { name: 'Golden Lions',      badge: '🦁' },
+    { name: 'Cyborg Bots',       badge: '🤖' },
+    { name: 'Mystic Dragons',    badge: '🐉' },
+    { name: 'Soaring Eagles',    badge: '🦅' },
+    { name: 'Neon Sharks',       badge: '🦈' },
+    { name: 'Swift Foxes',       badge: '🦊' },
+    { name: 'Dual Swords',       badge: '⚔️' },
+    { name: 'Golden Champions',  badge: '🏆' }
+  ];
+
+  const participantBtn = document.getElementById('participant-btn');
+  const teamModal      = document.getElementById('team-modal');
+  const teamModalClose = document.getElementById('team-modal-close');
+  const teamInput      = document.getElementById('index-team-name-input');
+  const randomBtn      = document.getElementById('index-random-name-btn');
+  const avatarGrid     = document.getElementById('index-avatar-grid');
+  const confirmBtn     = document.getElementById('index-confirm-team-btn');
+  const errorMsg       = document.getElementById('index-team-error-msg');
+  const errorText      = document.getElementById('index-team-error-text');
+
+  let selectedBadge = '⚡';
+
+  function showModalError(msg) {
+    if (errorText) errorText.textContent = msg || 'Please enter your team name!';
+    if (errorMsg) errorMsg.classList.add('visible');
+    if (teamInput) {
+      teamInput.classList.remove('error');
+      void teamInput.offsetWidth;
+      teamInput.classList.add('error');
+      teamInput.focus();
+    }
+  }
+
+  function hideModalError() {
+    if (errorMsg) errorMsg.classList.remove('visible');
+    if (teamInput) teamInput.classList.remove('error');
+  }
+
+  function openTeamModal() {
+    hideModalError();
+    const active = getActiveTeam();
+    if (active && active.name && active.name.trim()) {
+      teamInput.value = active.name;
+      selectedBadge = active.badge || '⚡';
+    } else {
+      teamInput.value = '';
+    }
+    if (avatarGrid) {
+      avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-badge') === selectedBadge);
+      });
+    }
+    teamModal.style.display = 'flex';
+    setTimeout(() => { teamInput.focus(); }, 60);
+  }
+
+  function closeTeamModal() {
+    teamModal.style.display = 'none';
+  }
+
+  if (participantBtn) {
+    participantBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openTeamModal();
+    });
+  }
+
+  if (teamModalClose) {
+    teamModalClose.addEventListener('click', closeTeamModal);
+  }
+
+  if (teamModal) {
+    teamModal.addEventListener('click', (e) => {
+      if (e.target === teamModal) closeTeamModal();
+    });
+  }
+
+  if (randomBtn) {
+    randomBtn.addEventListener('click', () => {
+      const pick = TEAM_PRESETS[Math.floor(Math.random() * TEAM_PRESETS.length)];
+      teamInput.value = pick.name;
+      selectedBadge = pick.badge;
+      hideModalError();
+      if (avatarGrid) {
+        avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.getAttribute('data-badge') === selectedBadge);
+        });
+      }
+      teamInput.focus();
+    });
+  }
+
+  if (avatarGrid) {
+    avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        avatarGrid.querySelectorAll('.avatar-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedBadge = btn.getAttribute('data-badge') || '⚡';
+      });
+    });
+  }
+
+  if (teamInput) {
+    teamInput.addEventListener('input', () => {
+      if ((teamInput.value || '').trim()) hideModalError();
+    });
+    teamInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitAndJoin();
+      }
+    });
+  }
+
+  function submitAndJoin() {
+    const name = (teamInput.value || '').trim();
+    if (!name) {
+      showModalError('⚠️ Team name is required! Please enter your team name.');
+      return;
+    }
+    if (name.length < 2) {
+      showModalError('⚠️ Team name must be at least 2 characters long.');
+      return;
+    }
+    hideModalError();
+    setActiveTeam(name, selectedBadge);
+    window.location.href = `participant.html?team=${encodeURIComponent(name)}&badge=${encodeURIComponent(selectedBadge)}`;
+  }
+
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', submitAndJoin);
   }
 
 </script>

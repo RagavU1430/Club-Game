@@ -85,6 +85,166 @@
       display: flex;
     }
 
+    /* ─── Waiting For Host State ────────────────────────── */
+    .waiting-host-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 18px;
+      width: 100%;
+    }
+    .waiting-team-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px 20px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(0, 212, 255, 0.25);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 212, 255, 0.1);
+    }
+    .waiting-team-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .waiting-team-badge {
+      font-size: 2.2rem;
+      line-height: 1;
+      filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.6));
+    }
+    .waiting-team-meta {
+      text-align: left;
+    }
+    .waiting-team-prefix {
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: #94A3B8;
+      text-transform: uppercase;
+    }
+    .waiting-team-name {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #FFFFFF;
+      letter-spacing: 0.02em;
+    }
+    .btn-edit-team {
+      font-size: 0.8rem;
+      padding: 7px 14px;
+      border-radius: 100px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    /* Radar / Host Beacon */
+    .waiting-radar-box {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 24px 20px;
+      background: radial-gradient(circle at center, rgba(0, 212, 255, 0.08) 0%, rgba(139, 92, 246, 0.04) 70%, transparent 100%);
+      border: 1px dashed rgba(0, 212, 255, 0.35);
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .radar-beacon {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .radar-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 212, 255, 0.5);
+      animation: radar-expand 2.2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+    }
+    .radar-ring:nth-child(2) {
+      animation-delay: 0.7s;
+    }
+    .radar-ring:nth-child(3) {
+      animation-delay: 1.4s;
+    }
+    @keyframes radar-expand {
+      0% { transform: scale(0.4); opacity: 1; border-color: rgba(0, 212, 255, 0.8); }
+      100% { transform: scale(1.6); opacity: 0; border-color: rgba(168, 85, 247, 0); }
+    }
+    .radar-icon {
+      position: relative;
+      z-index: 2;
+      font-size: 2.2rem;
+      filter: drop-shadow(0 0 16px rgba(0, 212, 255, 0.8));
+      animation: pulse-beacon 1.5s ease-in-out infinite alternate;
+    }
+    @keyframes pulse-beacon {
+      0% { transform: scale(0.95); }
+      100% { transform: scale(1.08); }
+    }
+
+    .radar-status-title {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #FFFFFF;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .radar-status-sub {
+      font-size: 0.85rem;
+      color: #94A3B8;
+      max-width: 380px;
+      line-height: 1.5;
+    }
+    .radar-live-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: #10B981;
+      padding: 5px 14px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 100px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .live-dot-green {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 8px #10B981;
+      animation: pulse-dot 1.2s infinite;
+    }
+    .waiting-info-tips {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
+    .waiting-info-tips .tip-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: #CBD5E1;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 8px 14px;
+      border-radius: 10px;
+      text-align: left;
+    }
+
     /* ─── Premium Tournament Arena Loading Screen ───────── */
     #loading-screen.loading-overlay {
       position: fixed;
@@ -858,66 +1018,121 @@
   <!-- ─── Participant Team Locker Room Modal ──────────── -->
   <div class="modal-overlay" id="lobby-modal" role="dialog" aria-modal="true" aria-label="Team Locker Room">
     <div class="lobby-card">
-      <div class="lobby-badge-row">
-        <span class="lobby-tag">👥 PARTICIPANT PORTAL</span>
-        <span class="lobby-mode-pill" id="lobby-status-pill">Ready to Play</span>
+      <!-- ─── View 1: Team Setup Form ─── -->
+      <div class="team-setup-view" id="team-setup-view">
+        <div class="lobby-badge-row">
+          <span class="lobby-tag">👥 PARTICIPANT REGISTRATION</span>
+          <span class="lobby-mode-pill" id="lobby-status-pill">Step 1 of 2</span>
+        </div>
+
+        <h2 class="lobby-title">WordWave <span>Team Setup</span></h2>
+        <p class="lobby-desc">Enter your team name and select your team logo to join the tournament.</p>
+
+        <div class="team-input-group">
+          <label for="team-name-input" class="team-label">YOUR TEAM NAME <span style="color:#F43F5E;">*</span></label>
+          <div class="team-input-wrap">
+            <input type="text" id="team-name-input" class="team-input" placeholder="Type your team name here (Required)..." maxlength="22" autocomplete="off" spellcheck="false" required>
+            <button type="button" class="btn-random-name" id="random-name-btn" title="Pick Random Team & Logo">🎲 Random</button>
+          </div>
+          <div class="team-error-msg" id="team-error-msg">
+            <span>⚠️</span> <span id="team-error-text">Please enter a team name before starting!</span>
+          </div>
+        </div>
+
+        <div class="avatar-select-group">
+          <label class="team-label">CHOOSE 1 OF 30 TEAM LOGOS</label>
+          <div class="avatar-grid" id="avatar-grid">
+            <button type="button" class="avatar-btn active" data-badge="⚡" title="Team 1: Volt Lightning">⚡</button>
+            <button type="button" class="avatar-btn" data-badge="🐺" title="Team 2: Cyber Wolf">🐺</button>
+            <button type="button" class="avatar-btn" data-badge="🚀" title="Team 3: Cosmic Rocket">🚀</button>
+            <button type="button" class="avatar-btn" data-badge="👾" title="Team 4: Pixel Alien">👾</button>
+            <button type="button" class="avatar-btn" data-badge="🔥" title="Team 5: Inferno Flame">🔥</button>
+            <button type="button" class="avatar-btn" data-badge="💎" title="Team 6: Crystal Diamond">💎</button>
+            <button type="button" class="avatar-btn" data-badge="👑" title="Team 7: Royal Crown">👑</button>
+            <button type="button" class="avatar-btn" data-badge="🎯" title="Team 8: Target Sniper">🎯</button>
+            <button type="button" class="avatar-btn" data-badge="🦁" title="Team 9: Golden Lion">🦁</button>
+            <button type="button" class="avatar-btn" data-badge="🤖" title="Team 10: Cyborg Bot">🤖</button>
+            <button type="button" class="avatar-btn" data-badge="🐉" title="Team 11: Mystic Dragon">🐉</button>
+            <button type="button" class="avatar-btn" data-badge="🦅" title="Team 12: Soaring Eagle">🦅</button>
+            <button type="button" class="avatar-btn" data-badge="🦈" title="Team 13: Neon Shark">🦈</button>
+            <button type="button" class="avatar-btn" data-badge="🦊" title="Team 14: Swift Fox">🦊</button>
+            <button type="button" class="avatar-btn" data-badge="🐻" title="Team 15: Iron Bear">🐻</button>
+            <button type="button" class="avatar-btn" data-badge="🐯" title="Team 16: Shadow Tiger">🐯</button>
+            <button type="button" class="avatar-btn" data-badge="🐍" title="Team 17: Cyber Viper">🐍</button>
+            <button type="button" class="avatar-btn" data-badge="⚔️" title="Team 18: Dual Swords">⚔️</button>
+            <button type="button" class="avatar-btn" data-badge="🛡️" title="Team 19: Aegis Shield">🛡️</button>
+            <button type="button" class="avatar-btn" data-badge="🌪️" title="Team 20: Vortex Cyclone">🌪️</button>
+            <button type="button" class="avatar-btn" data-badge="☄️" title="Team 21: Blazing Comet">☄️</button>
+            <button type="button" class="avatar-btn" data-badge="🔮" title="Team 22: Mystic Orb">🔮</button>
+            <button type="button" class="avatar-btn" data-badge="🏆" title="Team 23: Golden Trophy">🏆</button>
+            <button type="button" class="avatar-btn" data-badge="🌌" title="Team 24: Cosmic Galaxy">🌌</button>
+            <button type="button" class="avatar-btn" data-badge="⭐" title="Team 25: Nova Star">⭐</button>
+            <button type="button" class="avatar-btn" data-badge="🏎️" title="Team 26: Turbo Velocity">🏎️</button>
+            <button type="button" class="avatar-btn" data-badge="🥊" title="Team 27: Power Striker">🥊</button>
+            <button type="button" class="avatar-btn" data-badge="🧬" title="Team 28: Quantum Helix">🧬</button>
+            <button type="button" class="avatar-btn" data-badge="⚓" title="Team 29: Anchor Vanguard">⚓</button>
+            <button type="button" class="avatar-btn" data-badge="🛸" title="Team 30: Star Voyager">🛸</button>
+          </div>
+        </div>
+
+        <div class="lobby-actions">
+          <button class="btn-primary lobby-start-btn" id="lobby-start-btn">✅ CONFIRM TEAM & WAIT FOR HOST</button>
+          <div class="lobby-sub-actions">
+            <button type="button" class="btn-secondary" id="lobby-view-lb-btn">🏆 View Leaderboard</button>
+            <button type="button" class="btn-secondary" id="lobby-view-tut-btn">❓ How to Play</button>
+          </div>
+        </div>
       </div>
 
-      <h2 class="lobby-title">WordWave <span>Team Setup</span></h2>
-      <p class="lobby-desc">Pick your team name and select your team logo from the <strong>30 official team logos</strong> below.</p>
-
-      <div class="team-input-group">
-        <label for="team-name-input" class="team-label">YOUR TEAM NAME <span style="color:#F43F5E;">*</span></label>
-        <div class="team-input-wrap">
-          <input type="text" id="team-name-input" class="team-input" placeholder="Type your team name here (Required)..." maxlength="22" autocomplete="off" spellcheck="false" required>
-          <button type="button" class="btn-random-name" id="random-name-btn" title="Pick Random Team & Logo">🎲 Random</button>
+      <!-- ─── View 2: Waiting for Host View ─── -->
+      <div class="waiting-host-card" id="waiting-host-view" style="display:none;">
+        <div class="lobby-badge-row">
+          <span class="lobby-tag">👥 TOURNAMENT ARENA</span>
+          <span class="radar-live-status">
+            <span class="live-dot-green"></span> READY FOR MATCH
+          </span>
         </div>
-        <div class="team-error-msg" id="team-error-msg">
-          <span>⚠️</span> <span id="team-error-text">Please enter a team name before starting!</span>
-        </div>
-      </div>
 
-      <div class="avatar-select-group">
-        <label class="team-label">CHOOSE 1 OF 30 TEAM LOGOS</label>
-        <div class="avatar-grid" id="avatar-grid">
-          <button type="button" class="avatar-btn active" data-badge="⚡" title="Team 1: Volt Lightning">⚡</button>
-          <button type="button" class="avatar-btn" data-badge="🐺" title="Team 2: Cyber Wolf">🐺</button>
-          <button type="button" class="avatar-btn" data-badge="🚀" title="Team 3: Cosmic Rocket">🚀</button>
-          <button type="button" class="avatar-btn" data-badge="👾" title="Team 4: Pixel Alien">👾</button>
-          <button type="button" class="avatar-btn" data-badge="🔥" title="Team 5: Inferno Flame">🔥</button>
-          <button type="button" class="avatar-btn" data-badge="💎" title="Team 6: Crystal Diamond">💎</button>
-          <button type="button" class="avatar-btn" data-badge="👑" title="Team 7: Royal Crown">👑</button>
-          <button type="button" class="avatar-btn" data-badge="🎯" title="Team 8: Target Sniper">🎯</button>
-          <button type="button" class="avatar-btn" data-badge="🦁" title="Team 9: Golden Lion">🦁</button>
-          <button type="button" class="avatar-btn" data-badge="🤖" title="Team 10: Cyborg Bot">🤖</button>
-          <button type="button" class="avatar-btn" data-badge="🐉" title="Team 11: Mystic Dragon">🐉</button>
-          <button type="button" class="avatar-btn" data-badge="🦅" title="Team 12: Soaring Eagle">🦅</button>
-          <button type="button" class="avatar-btn" data-badge="🦈" title="Team 13: Neon Shark">🦈</button>
-          <button type="button" class="avatar-btn" data-badge="🦊" title="Team 14: Swift Fox">🦊</button>
-          <button type="button" class="avatar-btn" data-badge="🐻" title="Team 15: Iron Bear">🐻</button>
-          <button type="button" class="avatar-btn" data-badge="🐯" title="Team 16: Shadow Tiger">🐯</button>
-          <button type="button" class="avatar-btn" data-badge="🐍" title="Team 17: Cyber Viper">🐍</button>
-          <button type="button" class="avatar-btn" data-badge="⚔️" title="Team 18: Dual Swords">⚔️</button>
-          <button type="button" class="avatar-btn" data-badge="🛡️" title="Team 19: Aegis Shield">🛡️</button>
-          <button type="button" class="avatar-btn" data-badge="🌪️" title="Team 20: Vortex Cyclone">🌪️</button>
-          <button type="button" class="avatar-btn" data-badge="☄️" title="Team 21: Blazing Comet">☄️</button>
-          <button type="button" class="avatar-btn" data-badge="🔮" title="Team 22: Mystic Orb">🔮</button>
-          <button type="button" class="avatar-btn" data-badge="🏆" title="Team 23: Golden Trophy">🏆</button>
-          <button type="button" class="avatar-btn" data-badge="🌌" title="Team 24: Cosmic Galaxy">🌌</button>
-          <button type="button" class="avatar-btn" data-badge="⭐" title="Team 25: Nova Star">⭐</button>
-          <button type="button" class="avatar-btn" data-badge="🏎️" title="Team 26: Turbo Velocity">🏎️</button>
-          <button type="button" class="avatar-btn" data-badge="🥊" title="Team 27: Power Striker">🥊</button>
-          <button type="button" class="avatar-btn" data-badge="🧬" title="Team 28: Quantum Helix">🧬</button>
-          <button type="button" class="avatar-btn" data-badge="⚓" title="Team 29: Anchor Vanguard">⚓</button>
-          <button type="button" class="avatar-btn" data-badge="🛸" title="Team 30: Star Voyager">🛸</button>
+        <div class="waiting-team-banner">
+          <div class="waiting-team-left">
+            <div class="waiting-team-badge" id="waiting-team-badge">⚡</div>
+            <div class="waiting-team-meta">
+              <div class="waiting-team-prefix">REGISTERED TEAM</div>
+              <div class="waiting-team-name" id="waiting-team-name">Volt Strikers</div>
+            </div>
+          </div>
+          <button type="button" class="btn-secondary btn-edit-team" id="btn-edit-team" title="Change Team Name or Logo">
+            ✏️ Change
+          </button>
         </div>
-      </div>
 
-      <div class="lobby-actions">
-        <button class="btn-primary lobby-start-btn" id="lobby-start-btn">🚀 START PLAYING</button>
-        <div class="lobby-sub-actions">
-          <button type="button" class="btn-secondary" id="lobby-view-lb-btn">🏆 View Leaderboard</button>
-          <button type="button" class="btn-secondary" id="lobby-view-tut-btn">❓ How to Play</button>
+        <div class="waiting-radar-box">
+          <div class="radar-beacon">
+            <div class="radar-ring"></div>
+            <div class="radar-ring"></div>
+            <div class="radar-ring"></div>
+            <div class="radar-icon">📡</div>
+          </div>
+          <div class="radar-status-title">WAITING FOR HOST TO START</div>
+          <div class="radar-status-sub" id="host-connection-sub">
+            Connected to Tournament Host! Stand by — your match countdown will start automatically when the host launches the round.
+          </div>
+        </div>
+
+        <div class="waiting-info-tips">
+          <div class="tip-item">
+            <span>🎯</span>
+            <span>TOP word gives +40 bonus — clear it with highest similarity clues!</span>
+          </div>
+          <div class="tip-item">
+            <span>🔥</span>
+            <span>Reach a 5 streak to wipe all words from the board</span>
+          </div>
+        </div>
+
+        <div class="lobby-sub-actions" style="margin-top:10px; width:100%;">
+          <button type="button" class="btn-secondary" id="waiting-view-lb-btn" style="flex:1;">🏆 Leaderboard</button>
+          <button type="button" class="btn-secondary" id="waiting-view-tut-btn" style="flex:1;">❓ Tutorial</button>
         </div>
       </div>
 
@@ -1155,12 +1370,20 @@
 
     let selectedBadge = '⚡';
     const lobbyModal        = document.getElementById('lobby-modal');
+    const teamSetupView     = document.getElementById('team-setup-view');
+    const waitingHostView   = document.getElementById('waiting-host-view');
     const teamNameInput     = document.getElementById('team-name-input');
     const randomNameBtn     = document.getElementById('random-name-btn');
     const avatarGrid        = document.getElementById('avatar-grid');
     const lobbyStartBtn     = document.getElementById('lobby-start-btn');
     const lobbyViewLbBtn    = document.getElementById('lobby-view-lb-btn');
     const lobbyViewTutBtn   = document.getElementById('lobby-view-tut-btn');
+
+    const waitingTeamName   = document.getElementById('waiting-team-name');
+    const waitingTeamBadge  = document.getElementById('waiting-team-badge');
+    const btnEditTeam       = document.getElementById('btn-edit-team');
+    const waitingViewLbBtn2 = document.getElementById('waiting-view-lb-btn');
+    const waitingViewTutBtn2= document.getElementById('waiting-view-tut-btn');
 
     const hudTeamBadge      = document.getElementById('hud-team-badge');
     const hudTeamName       = document.getElementById('hud-team-name');
@@ -1179,6 +1402,7 @@
     const leaderboardBtn    = document.getElementById('leaderboard-btn');
     const goLeaderboardBtn  = document.getElementById('go-leaderboard-btn');
     const goSwitchTeamBtn   = document.getElementById('go-switch-team-btn');
+    const goNextTeamBtn     = document.getElementById('go-next-team-btn');
 
     const broadcastTicker   = document.getElementById('broadcast-ticker');
     const broadcastText     = document.getElementById('broadcast-text');
@@ -1201,16 +1425,7 @@
       if (teamNameInput) teamNameInput.classList.remove('error');
     }
 
-    function refreshTeamUI() {
-      const team = getActiveTeam();
-      selectedBadge = (team && team.badge) ? team.badge : (selectedBadge || '⚡');
-      // Always prompt user for team name! Never auto-fill dummy 'Volt Strikers'
-      if (teamNameInput) {
-        teamNameInput.value = '';
-        teamNameInput.placeholder = 'Type your team name here (Required)...';
-      }
-      if (hudTeamBadge) hudTeamBadge.textContent = selectedBadge;
-      if (hudTeamName) hudTeamName.textContent = (team && team.name) ? team.name : 'Enter Team Name';
+    function syncAvatarActive() {
       if (avatarGrid) {
         avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
           btn.classList.toggle('active', btn.getAttribute('data-badge') === selectedBadge);
@@ -1218,44 +1433,84 @@
       }
     }
 
-    refreshTeamUI();
+    function showSetupView() {
+      if (teamSetupView) teamSetupView.style.display = 'block';
+      if (waitingHostView) waitingHostView.style.display = 'none';
+      if (lobbyModal) lobbyModal.style.display = 'flex';
+      hideTeamError();
 
-    // Check if team was passed via URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const paramTeam = urlParams.get('team');
-    if (paramTeam && teamNameInput) {
-      teamNameInput.value = paramTeam.trim().slice(0, 22);
+      const team = getActiveTeam();
+      if (team && team.name) {
+        if (teamNameInput) teamNameInput.value = team.name;
+        selectedBadge = team.badge || selectedBadge || '⚡';
+      } else {
+        if (teamNameInput) teamNameInput.value = '';
+      }
+      syncAvatarActive();
+      setTimeout(() => {
+        if (teamNameInput) teamNameInput.focus();
+      }, 50);
+    }
+
+    function showWaitingView(team) {
+      const active = team || getActiveTeam();
+      if (!active || !active.name || !active.name.trim()) {
+        showSetupView();
+        return;
+      }
+      if (teamSetupView) teamSetupView.style.display = 'none';
+      if (waitingHostView) waitingHostView.style.display = 'block';
+      if (lobbyModal) lobbyModal.style.display = 'flex';
+
+      if (waitingTeamName) waitingTeamName.textContent = active.name;
+      if (waitingTeamBadge) waitingTeamBadge.textContent = active.badge || '⚡';
+      if (hudTeamName) hudTeamName.textContent = active.name;
+      if (hudTeamBadge) hudTeamBadge.textContent = active.badge || '⚡';
     }
 
     // 🎲 Random Preset Button
-    randomNameBtn.addEventListener('click', () => {
-      const pick = TEAM_PRESETS[Math.floor(Math.random() * TEAM_PRESETS.length)];
-      teamNameInput.value = pick.name;
-      selectedBadge = pick.badge;
-      hideTeamError();
-      if (avatarGrid) {
-        avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
-          btn.classList.toggle('active', btn.getAttribute('data-badge') === selectedBadge);
-        });
-        const activeBtn = avatarGrid.querySelector('.avatar-btn.active');
+    if (randomNameBtn) {
+      randomNameBtn.addEventListener('click', () => {
+        const pick = TEAM_PRESETS[Math.floor(Math.random() * TEAM_PRESETS.length)];
+        if (teamNameInput) teamNameInput.value = pick.name;
+        selectedBadge = pick.badge;
+        hideTeamError();
+        syncAvatarActive();
+        const activeBtn = avatarGrid ? avatarGrid.querySelector('.avatar-btn.active') : null;
         if (activeBtn) activeBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      }
-      teamNameInput.focus();
-    });
+        if (teamNameInput) teamNameInput.focus();
+      });
+    }
 
     // Logo Button Clicks
-    avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        avatarGrid.querySelectorAll('.avatar-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        selectedBadge = btn.getAttribute('data-badge') || '⚡';
+    if (avatarGrid) {
+      avatarGrid.querySelectorAll('.avatar-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          avatarGrid.querySelectorAll('.avatar-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          selectedBadge = btn.getAttribute('data-badge') || '⚡';
+        });
       });
-    });
+    }
 
-    let game = null;
+    // Input error clearing on typing
+    if (teamNameInput) {
+      teamNameInput.addEventListener('input', () => {
+        if ((teamNameInput.value || '').trim()) {
+          hideTeamError();
+        }
+      });
+      teamNameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleTeamConfirm();
+        }
+      });
+    }
 
-    function saveCurrentTeam() {
-      const name = (teamNameInput.value || '').trim();
+    // Confirm Team and enter Waiting for Host state
+    function handleTeamConfirm() {
+      const name = (teamNameInput ? teamNameInput.value : '').trim();
       if (!name) {
         showTeamError('⚠️ Team name is required! Please enter your team name.');
         return null;
@@ -1265,23 +1520,40 @@
         return null;
       }
       hideTeamError();
-      return setActiveTeam(name, selectedBadge);
+      const saved = setActiveTeam(name, selectedBadge);
+      audio.match();
+      showWaitingView(saved);
+      return saved;
     }
 
-    function triggerMatchStart() {
-      const team = saveCurrentTeam();
-      if (!team) {
-        lobbyModal.style.display = 'flex';
-        teamNameInput.focus();
+    if (lobbyStartBtn) {
+      lobbyStartBtn.addEventListener('click', handleTeamConfirm);
+    }
+
+    if (btnEditTeam) {
+      btnEditTeam.addEventListener('click', () => {
+        showSetupView();
+      });
+    }
+
+    let game = null;
+    let isLaunching = false;
+
+    function startCountdownAndLaunch(teamToUse) {
+      if (isLaunching) return;
+      const team = teamToUse || getActiveTeam();
+      if (!team || !team.name || !team.name.trim()) {
+        showSetupView();
+        showTeamError('⚠️ Host is starting! Please enter your team name to join!');
         return;
       }
-      if (hudTeamName) hudTeamName.textContent = team.name;
-      if (hudTeamBadge) hudTeamBadge.textContent = team.badge;
-      lobbyModal.style.display = 'none';
+
+      isLaunching = true;
+      if (lobbyModal) lobbyModal.style.display = 'none';
       const gameOverEl = document.getElementById('game-over-overlay');
       if (gameOverEl) gameOverEl.classList.remove('active', 'visible');
 
-      countdownTeamBadge.textContent = team.badge;
+      countdownTeamBadge.textContent = team.badge || '⚡';
       countdownTeamName.textContent = team.name;
       countdownOverlay.classList.add('active');
 
@@ -1340,6 +1612,7 @@
           clearInterval(iv);
           countdownOverlay.classList.remove('active');
           countdownNumber.classList.remove('go-active');
+          isLaunching = false;
           if (game) {
             game.destroy();
             game = null;
@@ -1350,48 +1623,75 @@
       }, 950);
     }
 
-    lobbyStartBtn.addEventListener('click', triggerMatchStart);
-
     // ─── Real-time Admin Sync (Host Control Broadcast) ────
     let lastMatchStateTimestamp = 0;
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'wordwave_match_state') {
-        const state = getMatchState();
-        if (state.timestamp && state.timestamp !== lastMatchStateTimestamp) {
-          lastMatchStateTimestamp = state.timestamp;
 
-          // Check if admin broadcast an announcement
-          if (state.message) {
-            broadcastText.textContent = state.message;
-            broadcastTicker.classList.add('visible');
-            setTimeout(() => { broadcastTicker.classList.remove('visible'); }, 5000);
-          }
+    function handleHostSync(state) {
+      if (!state || !state.timestamp || state.timestamp === lastMatchStateTimestamp) return;
+      lastMatchStateTimestamp = state.timestamp;
 
-          // Check if admin triggered start countdown
-          if (state.status === 'COUNTDOWN') {
-            const currentName = (teamNameInput.value || '').trim();
-            if (!currentName) {
-              lobbyModal.style.display = 'flex';
-              showTeamError('⚡ Host is starting the match! Please enter your team name now!');
-              teamNameInput.focus();
-              return;
-            }
-            if (lobbyModal.style.display !== 'none' || !game || !game.isRunning) {
-              triggerMatchStart();
-            }
-          }
+      // Check if admin broadcast an announcement
+      if (state.message) {
+        broadcastText.textContent = state.message;
+        broadcastTicker.classList.add('visible');
+        setTimeout(() => { broadcastTicker.classList.remove('visible'); }, 5000);
+      }
 
-          // Check if admin reset to lobby
-          if (state.status === 'LOBBY') {
-            if (game && game.isRunning) {
-              game.destroy();
-              game = null;
-            }
-            lobbyModal.style.display = 'flex';
-          }
+      // Check if admin triggered start countdown
+      if (state.status === 'COUNTDOWN') {
+        const currentTeam = getActiveTeam();
+        if (!currentTeam || !currentTeam.name || !currentTeam.name.trim()) {
+          showSetupView();
+          showTeamError('⚡ Host has started the match! Enter your team name to join!');
+          return;
+        }
+        if (!game || !game.isRunning) {
+          startCountdownAndLaunch(currentTeam);
         }
       }
+
+      // Check if admin reset to lobby
+      if (state.status === 'LOBBY') {
+        if (game && game.isRunning) {
+          game.destroy();
+          game = null;
+        }
+        const currentTeam = getActiveTeam();
+        if (currentTeam && currentTeam.name && currentTeam.name.trim().length >= 2) {
+          showWaitingView(currentTeam);
+        } else {
+          showSetupView();
+        }
+      }
+    }
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'wordwave_match_state') {
+        handleHostSync(getMatchState());
+      }
     });
+
+    // Cross-tab/window polling every 400ms for instant broadcast detection
+    setInterval(() => {
+      handleHostSync(getMatchState());
+    }, 400);
+
+    // Initial View on Load
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramTeam = urlParams.get('team');
+    const paramBadge = urlParams.get('badge');
+
+    if (paramTeam && paramTeam.trim()) {
+      const saved = setActiveTeam(paramTeam.trim().slice(0, 22), paramBadge || selectedBadge || '⚡');
+      showWaitingView(saved);
+    } else {
+      const current = getActiveTeam();
+      if (current && current.name && current.name.trim().length >= 2) {
+        showWaitingView(current);
+      } else {
+        showSetupView();
+      }
+    }
 
     // ─── Leaderboard Modal ────────────────────────────────
     function openLeaderboard() {
@@ -1433,6 +1733,7 @@
 
     leaderboardBtn.addEventListener('click', openLeaderboard);
     lobbyViewLbBtn.addEventListener('click', openLeaderboard);
+    if (waitingViewLbBtn2) waitingViewLbBtn2.addEventListener('click', openLeaderboard);
     if (goLeaderboardBtn) goLeaderboardBtn.addEventListener('click', openLeaderboard);
     lbCloseBtn.addEventListener('click', () => { leaderboardModal.style.display = 'none'; });
     lbDoneBtn.addEventListener('click', () => { leaderboardModal.style.display = 'none'; });
@@ -1440,22 +1741,24 @@
     if (goSwitchTeamBtn) {
       goSwitchTeamBtn.addEventListener('click', () => {
         document.getElementById('game-over-overlay').classList.remove('active', 'visible');
-        lobbyModal.style.display = 'flex';
+        showSetupView();
       });
     }
 
-    const playAgainBtn = document.getElementById('play-again-btn');
-    if (playAgainBtn) {
-      playAgainBtn.addEventListener('click', () => {
+    if (goNextTeamBtn) {
+      goNextTeamBtn.addEventListener('click', () => {
         document.getElementById('game-over-overlay').classList.remove('active', 'visible');
-        triggerMatchStart();
+        showSetupView();
       });
     }
 
     hudTeamDisplay.addEventListener('click', () => {
       if (confirm('Return to team setup? Current game will pause.')) {
-        if (game) game.destroy();
-        lobbyModal.style.display = 'flex';
+        if (game) {
+          game.destroy();
+          game = null;
+        }
+        showSetupView();
       }
     });
 

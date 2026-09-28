@@ -75,7 +75,7 @@ export function getActiveTeam() {
 
 export function setActiveTeam(name, badge = '⚡') {
   const team = {
-    name: (name || 'Team Alpha').trim().slice(0, 24),
+    name: (name || '').trim().slice(0, 24),
     badge: badge || '⚡'
   };
   try {
